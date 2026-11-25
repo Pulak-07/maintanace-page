@@ -191,6 +191,14 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Developer Credit Link -->
+            <div class="pointer-events-auto text-xs text-slate-300/90 tracking-wide">
+                Developer:
+                <a href="https://pulakchakma.dev.cv" target="_blank" rel="noopener noreferrer" class="text-amber-300 hover:text-amber-200 underline underline-offset-4 font-bold transition">
+                    Pulak Chakma
+                </a>
+            </div>
         </footer>
     </div>
 
@@ -310,19 +318,35 @@
     </div>
 
     <script>
+        function initMaintenancePage() {
         // =========================================================================
         // 1. CANVAS & PARALLAX NATURE WORLD ENGINE
         // =========================================================================
         const canvas = document.getElementById('worldCanvas');
+        if (!canvas) return;
         const ctx = canvas.getContext('2d');
 
-        let width = window.innerWidth;
-        let height = window.innerHeight;
+        // Polyfill ctx.roundRect for older Safari / mobile WebViews
+        if (!CanvasRenderingContext2D.prototype.roundRect) {
+            CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+                const radius = Array.isArray(r) ? r[0] : (r || 0);
+                this.moveTo(x + radius, y);
+                this.arcTo(x + w, y, x + w, y + h, radius);
+                this.arcTo(x + w, y + h, x, y + h, radius);
+                this.arcTo(x, y + h, x, y, radius);
+                this.arcTo(x, y, x + w, y, radius);
+                this.closePath();
+                return this;
+            };
+        }
+
+        let width = window.innerWidth || document.documentElement.clientWidth || 800;
+        let height = window.innerHeight || document.documentElement.clientHeight || 600;
         let dpr = Math.min(window.devicePixelRatio || 1, 2);
 
         function resizeCanvas() {
-            width = window.innerWidth;
-            height = window.innerHeight;
+            width = window.innerWidth || document.documentElement.clientWidth || 800;
+            height = window.innerHeight || document.documentElement.clientHeight || 600;
             dpr = Math.min(window.devicePixelRatio || 1, 2);
             canvas.width = Math.floor(width * dpr);
             canvas.height = Math.floor(height * dpr);
@@ -1198,6 +1222,13 @@
 
         updateRainmeterClock();
         setInterval(updateRainmeterClock, 1000);
+        }
+
+        if (document.readyState === 'loading') {
+            window.addEventListener('DOMContentLoaded', initMaintenancePage);
+        } else {
+            initMaintenancePage();
+        }
     </script>
 </body>
 </html>
