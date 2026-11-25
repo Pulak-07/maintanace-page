@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Under Scheduled Maintenance — Express Line</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <style>
+        /* Apply Times New Roman across all text while preserving Font Awesome icon glyphs */
+        html, body, h1, h2, h3, h4, p, span, a, button, input, textarea, label, div {
+            font-family: "Times New Roman", Times, Georgia, serif;
+        }
+        .fa-solid, .fa-regular, .fa-brands, .fas, .far, .fab {
+            font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands" !important;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            user-select: none;
+            background-color: #0b1320;
+        }
+
+        #worldCanvas {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            z-index: 1;
+            cursor: pointer;
+        }
+
+        /* Frosted Glass UI Panels */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.72);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+        }
+
+        .glass-modal {
+            background: rgba(15, 23, 42, 0.94);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.45; transform: scale(0.88); }
+        }
+        .status-dot {
+            animation: pulseGlow 1.8s infinite ease-in-out;
+        }
+
+        @keyframes modalPop {
+            from { opacity: 0; transform: translateY(14px) scale(0.97); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .modal-animate {
+            animation: modalPop 0.22s ease-out forwards;
+        }
+
+        /* Rainmeter-style Desktop Clock & Date Widget */
+        .rainmeter-widget {
+            text-shadow: 0 4px 24px rgba(0, 0, 0, 0.55);
+        }
+    </style>
+</head>
+<body class="text-slate-100">
+
+    <!-- Full-Screen Live Nature & Train Game Canvas -->
+    <canvas id="worldCanvas"></canvas>
+
+    <!-- Foreground HUD Layer -->
+    <div class="relative z-10 flex flex-col justify-between w-full h-full pointer-events-none p-3 sm:p-5">
+
+        <!-- TOP SECTION: Compact Controls + Rainmeter Clock & Maintenance Notice -->
+        <div class="flex flex-col items-center w-full max-w-6xl mx-auto gap-2">
+            <!-- Top Navigation Bar -->
+            <header class="flex flex-wrap items-center justify-between gap-2 w-full">
+                <!-- Environment Time-of-Day Switcher -->
+                <div class="glass-panel pointer-events-auto inline-flex items-center gap-1 p-1 rounded-full">
+                    <button type="button" data-theme="day" class="theme-btn px-3 py-1 rounded-full text-xs sm:text-sm font-bold transition flex items-center gap-1.5 text-slate-300 hover:text-white">
+                        <i class="fa-solid fa-sun text-amber-300"></i>
+                        <span>Day</span>
+                    </button>
+                    <button type="button" data-theme="sunset" class="theme-btn px-3 py-1 rounded-full text-xs sm:text-sm font-bold transition flex items-center gap-1.5 bg-amber-500/25 text-amber-200 border border-amber-400/40">
+                        <i class="fa-solid fa-cloud-sun text-orange-300"></i>
+                        <span>Sunset</span>
+                    </button>
+                    <button type="button" data-theme="night" class="theme-btn px-3 py-1 rounded-full text-xs sm:text-sm font-bold transition flex items-center gap-1.5 text-slate-300 hover:text-white">
+                        <i class="fa-solid fa-moon text-indigo-300"></i>
+                        <span>Night</span>
+                    </button>
+                </div>
+
+                <!-- Action Buttons (Open Modals Only On Click) & Sound Toggle -->
+                <div class="pointer-events-auto flex flex-wrap items-center gap-2">
+                    <button type="button" id="openNotifyBtn" class="glass-panel hover:bg-amber-500/20 hover:border-amber-400/50 text-amber-200 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-bold transition flex items-center gap-1.5 cursor-pointer">
+                        <i class="fa-solid fa-bell text-amber-400"></i>
+                        <span>Notify Me</span>
+                    </button>
+
+                    <button type="button" id="openDevBtn" class="glass-panel hover:bg-emerald-500/20 hover:border-emerald-400/50 text-emerald-200 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-bold transition flex items-center gap-1.5 cursor-pointer">
+                        <i class="fa-solid fa-headset text-emerald-400"></i>
+                        <span>Ask Developer</span>
+                    </button>
+
+                    <button type="button" id="soundToggleBtn" title="Toggle Ambient Train Audio" class="glass-panel hover:bg-white/15 text-slate-200 w-9 h-9 rounded-full flex items-center justify-center transition cursor-pointer">
+                        <i id="soundIcon" class="fa-solid fa-volume-xmark text-sm"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Compact Upper HUD: Rainmeter Clock + Sleek Maintenance Notice -->
+            <main class="flex flex-col items-center text-center px-2 gap-1.5">
+                <!-- Rainmeter-Style Live Clock & Date Skin -->
+                <div class="rainmeter-widget select-none flex flex-col items-center">
+                    <div class="flex items-baseline gap-1.5">
+                        <span id="rmTime" class="text-2xl sm:text-4xl font-bold tracking-wider text-white/95">12:00:00</span>
+                        <span id="rmAmPm" class="text-xs sm:text-sm font-bold tracking-widest text-amber-300 uppercase">PM</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-[11px] sm:text-xs tracking-[0.2em] uppercase text-slate-200/90 font-bold">
+                        <span id="rmDay">Wednesday</span>
+                        <span class="text-amber-400">&bull;</span>
+                        <span id="rmDate">November 25, 2026</span>
+                    </div>
+                </div>
+
+                <!-- Slim Maintenance Banner (Leaves full view of the train below) -->
+                <div class="glass-panel max-w-xl px-4 py-2.5 sm:px-6 sm:py-3 rounded-2xl border border-amber-400/30">
+                    <div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-[11px] font-bold tracking-wider uppercase mb-1">
+                        <span class="w-2 h-2 rounded-full bg-amber-400 status-dot"></span>
+                        <span>Scheduled Maintenance In Progress</span>
+                    </div>
+                    <h1 class="text-lg sm:text-xl font-bold text-white tracking-tight leading-snug">
+                        Site Under Scheduled Maintenance — We’ll Be Back Soon!
+                    </h1>
+                    <p class="text-slate-200/90 text-xs sm:text-sm mt-0.5 max-w-lg mx-auto leading-normal">
+                        Our engineers are upgrading the tracks. Enjoy the ride—stoke coal, jump, or collect golden orbs!
+                    </p>
+                </div>
+            </main>
+        </div>
+
+        <!-- BOTTOM GAME HUD: Interactive Conductor Controls -->
+        <footer class="w-full max-w-4xl mx-auto flex flex-col items-center gap-2.5">
+            <!-- Game Score & Distance Bar -->
+            <div class="glass-panel pointer-events-auto px-5 py-2.5 rounded-2xl flex flex-wrap items-center justify-between gap-4 w-full">
+                <!-- Left: Interactive Game Controls -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <button type="button" id="stokeCoalBtn" class="bg-amber-600 hover:bg-amber-500 active:scale-95 text-white px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 shadow-md cursor-pointer">
+                        <i class="fa-solid fa-fire"></i>
+                        <span>Stoke Coal</span>
+                    </button>
+
+                    <button type="button" id="hopTrainBtn" class="bg-sky-600 hover:bg-sky-500 active:scale-95 text-white px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 shadow-md cursor-pointer">
+                        <i class="fa-solid fa-arrow-up"></i>
+                        <span>Hop (Space)</span>
+                    </button>
+
+                    <button type="button" id="hornBtn" class="bg-slate-700 hover:bg-slate-600 active:scale-95 text-amber-200 px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 border border-white/15 cursor-pointer">
+                        <i class="fa-solid fa-bullhorn"></i>
+                        <span>Whistle</span>
+                    </button>
+                </div>
+
+                <!-- Right: Live Game Metrics (Never Reaches Destination) -->
+                <div class="flex items-center gap-5 text-sm sm:text-base">
+                    <div class="flex items-center gap-1.5 text-amber-300 font-bold">
+                        <i class="fa-solid fa-star"></i>
+                        <span>Orbs: <span id="orbScore">0</span></span>
+                    </div>
+                    <div class="flex items-center gap-1.5 text-emerald-300 font-bold">
+                        <i class="fa-solid fa-gauge-high"></i>
+                        <span><span id="speedDisplay">68</span> km/h</span>
+                    </div>
+                    <div class="hidden sm:flex items-center gap-1.5 text-slate-300">
+                        <i class="fa-solid fa-flag-checkered text-rose-400"></i>
+                        <span>Station: <span id="distanceDisplay">12.4 km</span></span>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- POPUP MODAL 1: NOTIFY ME (HIDDEN UNTIL CLICKED)           -->
+    <!-- ========================================================= -->
+    <div id="notifyModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/65 backdrop-blur-sm p-4">
+        <div class="glass-modal modal-animate w-full max-w-md rounded-2xl p-6 sm:p-7 relative text-slate-100">
+            <button type="button" id="closeNotifyBtn" class="absolute top-4 right-4 text-slate-400 hover:text-white w-8 h-8 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/15 transition cursor-pointer">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-11 h-11 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300 text-lg">
+                    <i class="fa-solid fa-ticket"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-white">Get Arrival Notification</h2>
+                    <p class="text-xs text-slate-300">Receive an email the moment maintenance finishes.</p>
+                </div>
+            </div>
+
+            <div id="notifyFormGroup">
+                <form id="notifyForm" class="space-y-4">
+                    <div>
+                        <label for="notifyEmailInput" class="block text-sm font-bold text-slate-200 mb-1.5">Your Email Address</label>
+                        <input
+                            type="email"
+                            id="notifyEmailInput"
+                            required
+                            placeholder="you@example.com"
+                            class="w-full px-4 py-2.5 rounded-xl bg-slate-900/90 border border-slate-600 focus:border-amber-400 focus:outline-none text-white placeholder-slate-400 text-base"
+                        />
+                    </div>
+                    <button type="submit" id="notifySubmitBtn" class="w-full py-2.5 px-5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-base transition flex items-center justify-center gap-2 shadow-lg cursor-pointer">
+                        <i class="fa-solid fa-paper-plane"></i>
+                        <span>Notify Me on Launch</span>
+                    </button>
+                </form>
+            </div>
+
+            <div id="notifySuccessMsg" class="hidden text-center py-4 space-y-3">
+                <div class="w-12 h-12 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 flex items-center justify-center mx-auto text-xl">
+                    <i class="fa-solid fa-check"></i>
+                </div>
+                <h3 class="text-lg font-bold text-white">Ticket Confirmed!</h3>
+                <p class="text-sm text-slate-300">
+                    A confirmation email has been dispatched from <span class="text-amber-300">no_reply@pulakchakma.dev.cv</span>. We’ll alert you as soon as we arrive!
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- POPUP MODAL 2: ASK DEVELOPER (HIDDEN UNTIL CLICKED)       -->
+    <!-- ========================================================= -->
+    <div id="devModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/65 backdrop-blur-sm p-4">
+        <div class="glass-modal modal-animate w-full max-w-md rounded-2xl p-6 sm:p-7 relative text-slate-100">
+            <button type="button" id="closeDevBtn" class="absolute top-4 right-4 text-slate-400 hover:text-white w-8 h-8 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/15 transition cursor-pointer">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-11 h-11 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-300 text-lg">
+                    <i class="fa-solid fa-terminal"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-white">Ask the Developer</h2>
+                    <p class="text-xs text-slate-300">Direct message to contact@pulakchakma.dev.cv</p>
+                </div>
+            </div>
+
+            <div id="devFormGroup">
+                <form id="devForm" class="space-y-4">
+                    <div>
+                        <label for="devReplyEmail" class="block text-sm font-bold text-slate-200 mb-1">Your Email Address</label>
+                        <input
+                            type="email"
+                            id="devReplyEmail"
+                            required
+                            placeholder="you@example.com"
+                            class="w-full px-4 py-2.5 rounded-xl bg-slate-900/90 border border-slate-600 focus:border-emerald-400 focus:outline-none text-white placeholder-slate-400 text-base"
+                        />
+                    </div>
+                    <div>
+                        <label for="devMessageInput" class="block text-sm font-bold text-slate-200 mb-1">Your Question or Message</label>
+                        <textarea
+                            id="devMessageInput"
+                            rows="3"
+                            required
+                            placeholder="Ask about maintenance timeline, urgent support, or feedback..."
+                            class="w-full px-4 py-2.5 rounded-xl bg-slate-900/90 border border-slate-600 focus:border-emerald-400 focus:outline-none text-white placeholder-slate-400 text-base resize-none"
+                        ></textarea>
+                    </div>
+                    <button type="submit" id="devSubmitBtn" class="w-full py-2.5 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-base transition flex items-center justify-center gap-2 shadow-lg cursor-pointer">
+                        <i class="fa-solid fa-envelope-circle-check"></i>
+                        <span>Send Message to Engineer</span>
+                    </button>
+                </form>
+            </div>
+
+            <div id="devSuccessMsg" class="hidden text-center py-4 space-y-3">
+                <div class="w-12 h-12 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 flex items-center justify-center mx-auto text-xl">
+                    <i class="fa-solid fa-check-double"></i>
+                </div>
+                <h3 class="text-lg font-bold text-white">Message Sent & Confirmed!</h3>
+                <p class="text-sm text-slate-300">
+                    Your inquiry was delivered to <span class="text-emerald-300">contact@pulakchakma.dev.cv</span>, and a confirmation receipt has been emailed to you.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Toast Notification -->
+    <div id="toastBanner" class="fixed bottom-24 left-1/2 -translate-x-1/2 z-40 hidden glass-panel px-5 py-2.5 rounded-full text-sm font-bold text-amber-200 border border-amber-400/40 shadow-xl">
+        <span id="toastText">All aboard!</span>
+    </div>
+
+    <script>
+        // =========================================================================
+        // 1. CANVAS & PARALLAX NATURE WORLD ENGINE
+        // =========================================================================
+        const canvas = document.getElementById('worldCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let width = window.innerWidth;
+        let height = window.innerHeight;
+        let dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+        function resizeCanvas() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            dpr = Math.min(window.devicePixelRatio || 1, 2);
+            canvas.width = Math.floor(width * dpr);
+            canvas.height = Math.floor(height * dpr);
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Color palettes for Day, Sunset, and Night environments
+        const THEMES = {
+            day: {
+                skyTop: '#1d6fa5',
+                skyMid: '#56b4d3',
+                skyBottom: '#d9f1ff',
+                sunColor: '#fff6b3',
+                sunGlow: 'rgba(255, 240, 150, 0.45)',
+                farMountain: '#4e7c9b',
+                midMountain: '#2f6659',
+                nearHill: '#24583c',
+                meadow: '#1e4d2b',
+                river: '#3b9ec9',
+                starAlpha: 0,
+                headlightAlpha: 0.12
+            },
+            sunset: {
+                skyTop: '#1e1b4b',
+                skyMid: '#be4b49',
+                skyBottom: '#f6ad55',
+                sunColor: '#ffdd75',
+                sunGlow: 'rgba(251, 146, 60, 0.55)',
+                farMountain: '#4a2c40',
+                midMountain: '#362338',
+                nearHill: '#231f2e',
+                meadow: '#181a24',
+                river: '#d97757',
+                starAlpha: 0.35,
+                headlightAlpha: 0.45
+            },
+            night: {
+                skyTop: '#040814',
+                skyMid: '#0d1b36',
+                skyBottom: '#1c355e',
+                sunColor: '#f1f5f9',
+                sunGlow: 'rgba(203, 213, 225, 0.3)',
+                farMountain: '#0f1d33',
+                midMountain: '#0b1729',
+                nearHill: '#08121f',
+                meadow: '#060e17',
+                river: '#162d4d',
+                starAlpha: 0.95,
+                headlightAlpha: 0.85
+            }
+        };
+
+        let currentTheme = 'sunset';
+
+        // Game & Train Physics State
+        const state = {
+            baseSpeed: 260,
+            boostSpeed: 0,
+            wheelAngle: 0,
+            trackScroll: 0,
+            mountainScroll: 0,
+            hillScroll: 0,
+            treeScroll: 0,
+            trainYOffset: 0,
+            trainVy: 0,
+            isJumping: false,
+            orbsCollected: 0,
+            distancePulse: 0
+        };
+
+        // Procedural Scenery Entities
+        const stars = Array.from({ length: 75 }, () => ({
+            x: Math.random(),
+            y: Math.random() * 0.55,
+            r: Math.random() * 1.6 + 0.5,
+            twinkle: Math.random() * Math.PI * 2
+        }));
+
+        const clouds = Array.from({ length: 6 }, (_, i) => ({
+            x: i * 320 + Math.random() * 120,
+            y: 55 + Math.random() * 110,
+            scale: 0.7 + Math.random() * 0.6,
+            speed: 14 + Math.random() * 12
+        }));
+
+        const trees = Array.from({ length: 24 }, (_, i) => ({
+            x: i * 110 + Math.random() * 45,
+            scale: 0.75 + Math.random() * 0.55,
+            type: i % 2
+        }));
+
+        const smokeParticles = [];
+        const sparkParticles = [];
+        const birds = [];
+        const energyOrbs = [];
+
+        function spawnOrb() {
+            const trackY = height * 0.77;
+            energyOrbs.push({
+                x: width + 60,
+                y: trackY - (Math.random() > 0.45 ? 115 : 42),
+                r: 12,
+                bob: Math.random() * Math.PI * 2
+            });
+        }
+        setInterval(spawnOrb, 2600);
+
+        function spawnBirdFlock(originX, originY) {
+            for (let i = 0; i < 5; i++) {
+                birds.push({
+                    x: originX + (Math.random() - 0.5) * 40,
+                    y: originY + (Math.random() - 0.5) * 30,
+                    vx: 70 + Math.random() * 55,
+                    vy: -18 - Math.random() * 20,
+                    wing: Math.random() * Math.PI * 2
+                });
+            }
+        }
+
+        // =========================================================================
+        // 2. WEB AUDIO SYNTHESIZER (WHISTLE & CHUG)
+        // =========================================================================
+        let audioCtx = null;
+        let soundEnabled = false;
+
+        function ensureAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) audioCtx = new AudioContext();
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function triggerHorn(forcePlay = false) {
+            // Visual steam burst from whistle
+            const trainAnchorX = Math.max(150, Math.min(width * 0.42, 420));
+            const trackY = height * 0.77 + state.trainYOffset;
+            for (let i = 0; i < 14; i++) {
+                smokeParticles.push({
+                    x: trainAnchorX + 75,
+                    y: trackY - 78,
+                    vx: -40 - Math.random() * 50,
+                    vy: -60 - Math.random() * 60,
+                    r: 6 + Math.random() * 6,
+                    alpha: 0.9,
+                    isSteam: true
+                });
+            }
+
+            if (!soundEnabled && !forcePlay) return;
+            ensureAudio();
+            if (!audioCtx) return;
+
+            const now = audioCtx.currentTime;
+            [311.13, 392.0, 466.16].forEach((freq) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, now);
+                gain.gain.setValueAtTime(0.001, now);
+                gain.gain.exponentialRampToValueAtTime(0.06, now + 0.08);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.75);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.78);
+            });
+        }
+
+        function playOrbChime() {
+            if (!soundEnabled) return;
+            ensureAudio();
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(587.33, now);
+            osc.frequency.exponentialRampToValueAtTime(880, now + 0.16);
+            gain.gain.setValueAtTime(0.07, now);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + 0.26);
+        }
+
+        // =========================================================================
+        // 3. RENDERING PIPELINE (NATURE, EVER-DISTANT STATION & TRAIN)
+        // =========================================================================
+        function drawSkyAndCelestial(theme, dt) {
+            const grad = ctx.createLinearGradient(0, 0, 0, height * 0.78);
+            grad.addColorStop(0, theme.skyTop);
+            grad.addColorStop(0.55, theme.skyMid);
+            grad.addColorStop(1, theme.skyBottom);
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, width, height);
+
+            // Stars
+            if (theme.starAlpha > 0) {
+                stars.forEach((s) => {
+                    s.twinkle += dt * 2.5;
+                    const alpha = theme.starAlpha * (0.55 + 0.45 * Math.sin(s.twinkle));
+                    ctx.fillStyle = `rgba(255, 255, 255, ${alpha.toFixed(2)})`;
+                    ctx.beginPath();
+                    ctx.arc(s.x * width, s.y * height, s.r, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+            }
+
+            // Sun / Moon on Horizon
+            const sunX = width * 0.78;
+            const sunY = height * 0.34;
+            const glow = ctx.createRadialGradient(sunX, sunY, 8, sunX, sunY, 130);
+            glow.addColorStop(0, theme.sunColor);
+            glow.addColorStop(0.35, theme.sunGlow);
+            glow.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = glow;
+            ctx.beginPath();
+            ctx.arc(sunX, sunY, 130, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = theme.sunColor;
+            ctx.beginPath();
+            ctx.arc(sunX, sunY, 32, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Drifting Clouds
+            clouds.forEach((c) => {
+                c.x -= (c.speed + state.boostSpeed * 0.04) * dt;
+                if (c.x < -180) c.x = width + 180;
+                ctx.fillStyle = currentTheme === 'night' ? 'rgba(148, 163, 184, 0.12)' : 'rgba(255, 255, 255, 0.32)';
+                ctx.beginPath();
+                ctx.arc(c.x, c.y, 26 * c.scale, 0, Math.PI * 2);
+                ctx.arc(c.x + 24 * c.scale, c.y - 8 * c.scale, 32 * c.scale, 0, Math.PI * 2);
+                ctx.arc(c.x + 52 * c.scale, c.y, 24 * c.scale, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function drawMountainRange(scrollOffset, baseHeightRatio, amplitude, color) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(0, height);
+            const step = 90;
+            const startIdx = Math.floor(scrollOffset / step) - 1;
+            const count = Math.ceil(width / step) + 3;
+
+            for (let i = 0; i <= count; i++) {
+                const idx = startIdx + i;
+                const x = idx * step - scrollOffset;
+                const peak = Math.sin(idx * 0.65) * amplitude + Math.cos(idx * 1.35) * (amplitude * 0.45);
+                const y = height * baseHeightRatio - Math.abs(peak);
+                ctx.lineTo(x, y);
+            }
+            ctx.lineTo(width, height);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // The Destination Station stays perpetually on the distant horizon (never reached!)
+        function drawDistantStation(trackY) {
+            const stationX = width * 0.87;
+            const stationY = trackY - 6;
+
+            ctx.save();
+            // Warm glowing lantern beacon at the unreachable station
+            const beaconPulse = 0.65 + 0.35 * Math.sin(performance.now() * 0.004);
+            const beaconGrad = ctx.createRadialGradient(stationX, stationY - 26, 2, stationX, stationY - 26, 42);
+            beaconGrad.addColorStop(0, `rgba(251, 191, 36, ${beaconPulse})`);
+            beaconGrad.addColorStop(1, 'rgba(251, 191, 36, 0)');
+            ctx.fillStyle = beaconGrad;
+            ctx.beginPath();
+            ctx.arc(stationX, stationY - 26, 42, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Silhouette of Station House & Clock Tower
+            ctx.fillStyle = currentTheme === 'day' ? '#334155' : '#0f172a';
+            ctx.fillRect(stationX - 24, stationY - 22, 48, 22);
+            ctx.fillRect(stationX - 8, stationY - 38, 16, 18);
+
+            // Pitched Roof
+            ctx.beginPath();
+            ctx.moveTo(stationX - 28, stationY - 22);
+            ctx.lineTo(stationX, stationY - 32);
+            ctx.lineTo(stationX + 28, stationY - 22);
+            ctx.closePath();
+            ctx.fill();
+
+            // Glowing station windows
+            ctx.fillStyle = '#fbbf24';
+            ctx.fillRect(stationX - 16, stationY - 15, 7, 7);
+            ctx.fillRect(stationX + 9, stationY - 15, 7, 7);
+            ctx.beginPath();
+            ctx.arc(stationX, stationY - 29, 3.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawForegroundNatureAndTracks(theme, trackY, speed, dt) {
+            // Meadow Ground
+            ctx.fillStyle = theme.meadow;
+            ctx.fillRect(0, trackY - 4, width, height - trackY + 4);
+
+            // Shimmering River Strip
+            ctx.fillStyle = theme.river;
+            ctx.fillRect(0, trackY + 26, width, 18);
+
+            // Parallax Pine Trees behind track
+            trees.forEach((t) => {
+                t.x -= speed * 0.55 * dt;
+                if (t.x < -60) t.x = width + 60;
+                const tx = t.x;
+                const ty = trackY - 4;
+                const s = t.scale;
+
+                ctx.fillStyle = currentTheme === 'night' ? '#051412' : '#143d29';
+                ctx.beginPath();
+                ctx.moveTo(tx, ty - 58 * s);
+                ctx.lineTo(tx - 18 * s, ty - 14 * s);
+                ctx.lineTo(tx + 18 * s, ty - 14 * s);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.moveTo(tx, ty - 42 * s);
+                ctx.lineTo(tx - 22 * s, ty);
+                ctx.lineTo(tx + 22 * s, ty);
+                ctx.closePath();
+                ctx.fill();
+            });
+
+            // Railway Embankment & Ties
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(0, trackY, width, 12);
+
+            state.trackScroll = (state.trackScroll + speed * dt) % 28;
+            ctx.fillStyle = '#475569';
+            for (let x = -state.trackScroll; x < width; x += 28) {
+                ctx.fillRect(x, trackY + 2, 14, 7);
+            }
+
+            // Polished Steel Rail
+            ctx.fillStyle = '#cbd5e1';
+            ctx.fillRect(0, trackY - 2, width, 3.5);
+        }
+
+        function drawExpressTrain(theme, trackY) {
+            const scale = width < 640 ? 0.76 : 1;
+            const trainX = Math.max(125, Math.min(width * 0.38, 390));
+            const baseY = trackY - 3 + state.trainYOffset;
+
+            ctx.save();
+            ctx.translate(trainX, baseY);
+            ctx.scale(scale, scale);
+
+            // Headlight Cone Beam
+            const beamGrad = ctx.createLinearGradient(115, -36, 360, -10);
+            beamGrad.addColorStop(0, `rgba(254, 240, 138, ${theme.headlightAlpha})`);
+            beamGrad.addColorStop(1, 'rgba(254, 240, 138, 0)');
+            ctx.fillStyle = beamGrad;
+            ctx.beginPath();
+            ctx.moveTo(115, -40);
+            ctx.lineTo(360, -85);
+            ctx.lineTo(360, 10);
+            ctx.lineTo(115, -28);
+            ctx.closePath();
+            ctx.fill();
+
+            // Helper to draw a passenger coach
+            function drawCoach(offsetX, labelColor) {
+                // Coupling bar
+                ctx.fillStyle = '#334155';
+                ctx.fillRect(offsetX + 112, -16, 16, 5);
+
+                // Coach body
+                ctx.fillStyle = '#1e293b';
+                ctx.beginPath();
+                ctx.roundRect(offsetX, -58, 114, 44, 6);
+                ctx.fill();
+
+                // Gold/Emerald Livery Stripe
+                ctx.fillStyle = labelColor;
+                ctx.fillRect(offsetX + 2, -28, 110, 5);
+
+                // Warm Illuminated Windows
+                ctx.fillStyle = '#fde68a';
+                for (let wx = 12; wx <= 86; wx += 24) {
+                    ctx.beginPath();
+                    ctx.roundRect(offsetX + wx, -49, 16, 15, 3);
+                    ctx.fill();
+                }
+
+                // Coach Wheels
+                [24, 90].forEach((wheelX) => {
+                    drawWheel(offsetX + wheelX, -8, 9);
+                });
+            }
+
+            // Draw Two Passenger Coaches
+            drawCoach(-258, '#10b981');
+            drawCoach(-130, '#f59e0b');
+
+            // Coupling to Locomotive
+            ctx.fillStyle = '#334155';
+            ctx.fillRect(-16, -16, 18, 5);
+
+            // === LOCOMOTIVE ENGINE ===
+            // Main Chassis
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(-4, -18, 120, 8);
+
+            // Boiler Barrel
+            const boilerGrad = ctx.createLinearGradient(0, -62, 0, -18);
+            boilerGrad.addColorStop(0, '#334155');
+            boilerGrad.addColorStop(0.5, '#1e293b');
+            boilerGrad.addColorStop(1, '#0f172a');
+            ctx.fillStyle = boilerGrad;
+            ctx.beginPath();
+            ctx.roundRect(28, -58, 86, 40, [4, 14, 6, 4]);
+            ctx.fill();
+
+            // Brass Boiler Bands
+            ctx.fillStyle = '#f59e0b';
+            ctx.fillRect(52, -58, 4, 40);
+            ctx.fillRect(84, -58, 4, 40);
+
+            // Engineer Cab
+            ctx.fillStyle = '#991b1b';
+            ctx.beginPath();
+            ctx.roundRect(-6, -72, 42, 54, [6, 6, 2, 2]);
+            ctx.fill();
+
+            // Cab Roof
+            ctx.fillStyle = '#f59e0b';
+            ctx.fillRect(-10, -75, 50, 5);
+
+            // Cab Window
+            ctx.fillStyle = '#fef08a';
+            ctx.beginPath();
+            ctx.roundRect(4, -63, 22, 18, 3);
+            ctx.fill();
+
+            // Smokestack
+            ctx.fillStyle = '#0f172a';
+            ctx.beginPath();
+            ctx.moveTo(88, -58);
+            ctx.lineTo(84, -78);
+            ctx.lineTo(102, -78);
+            ctx.lineTo(98, -58);
+            ctx.closePath();
+            ctx.fill();
+
+            // Cowcatcher (Front Pilot)
+            ctx.fillStyle = '#b91c1c';
+            ctx.beginPath();
+            ctx.moveTo(114, -18);
+            ctx.lineTo(132, -4);
+            ctx.lineTo(114, -4);
+            ctx.closePath();
+            ctx.fill();
+
+            // Locomotive Headlight
+            ctx.fillStyle = '#fef9c3';
+            ctx.beginPath();
+            ctx.arc(115, -36, 5.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Driving Wheels & Connecting Rod
+            drawWheel(18, -11, 12);
+            drawWheel(50, -11, 12);
+            drawWheel(86, -9, 9.5);
+
+            const rodX = Math.cos(state.wheelAngle) * 5;
+            const rodY = Math.sin(state.wheelAngle) * 5;
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(18 + rodX, -11 + rodY);
+            ctx.lineTo(50 + rodX, -11 + rodY);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawWheel(cx, cy, radius) {
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(state.wheelAngle);
+            ctx.fillStyle = '#1e293b';
+            ctx.beginPath();
+            ctx.arc(0, 0, radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Spokes
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 1.5;
+            for (let i = 0; i < 4; i++) {
+                const a = (i * Math.PI) / 2;
+                ctx.beginPath();
+                ctx.moveTo(Math.cos(a) * -radius, Math.sin(a) * -radius);
+                ctx.lineTo(Math.cos(a) * radius, Math.sin(a) * radius);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        function updateAndDrawParticles(trackY, speed, dt) {
+            const scale = width < 640 ? 0.76 : 1;
+            const trainX = Math.max(125, Math.min(width * 0.38, 390));
+            const stackX = trainX + 93 * scale;
+            const stackY = trackY - 78 * scale + state.trainYOffset;
+
+            // Emit continuous smoke puffs
+            if (Math.random() < (state.boostSpeed > 20 ? 0.85 : 0.45)) {
+                smokeParticles.push({
+                    x: stackX,
+                    y: stackY,
+                    vx: -speed * 0.48 - Math.random() * 35,
+                    vy: -38 - Math.random() * 28,
+                    r: 7 + Math.random() * 5,
+                    alpha: 0.65,
+                    isSteam: false
+                });
+            }
+
+            for (let i = smokeParticles.length - 1; i >= 0; i--) {
+                const p = smokeParticles[i];
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+                p.r += 14 * dt;
+                p.alpha -= 0.42 * dt;
+                if (p.alpha <= 0) {
+                    smokeParticles.splice(i, 1);
+                    continue;
+                }
+                ctx.fillStyle = p.isSteam
+                    ? `rgba(255, 255, 255, ${p.alpha.toFixed(2)})`
+                    : `rgba(226, 232, 240, ${p.alpha.toFixed(2)})`;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Firebox coal sparks
+            for (let i = sparkParticles.length - 1; i >= 0; i--) {
+                const s = sparkParticles[i];
+                s.x += s.vx * dt;
+                s.y += s.vy * dt;
+                s.vy += 180 * dt;
+                s.alpha -= 1.2 * dt;
+                if (s.alpha <= 0) {
+                    sparkParticles.splice(i, 1);
+                    continue;
+                }
+                ctx.fillStyle = `rgba(251, 191, 36, ${s.alpha.toFixed(2)})`;
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Collectible Golden Energy Orbs
+            const trainHitX = trainX + 45 * scale;
+            const trainHitY = trackY - 35 * scale + state.trainYOffset;
+
+            for (let i = energyOrbs.length - 1; i >= 0; i--) {
+                const orb = energyOrbs[i];
+                orb.x -= speed * dt;
+                orb.bob += dt * 4;
+                const oy = orb.y + Math.sin(orb.bob) * 7;
+
+                // Check collection collision
+                if (Math.hypot(orb.x - trainHitX, oy - trainHitY) < 52) {
+                    state.orbsCollected += 1;
+                    document.getElementById('orbScore').textContent = state.orbsCollected;
+                    playOrbChime();
+                    energyOrbs.splice(i, 1);
+                    continue;
+                }
+
+                if (orb.x < -40) {
+                    energyOrbs.splice(i, 1);
+                    continue;
+                }
+
+                // Draw glowing orb
+                const orbGlow = ctx.createRadialGradient(orb.x, oy, 2, orb.x, oy, 22);
+                orbGlow.addColorStop(0, '#fef08a');
+                orbGlow.addColorStop(0.5, 'rgba(245, 158, 11, 0.55)');
+                orbGlow.addColorStop(1, 'rgba(245, 158, 11, 0)');
+                ctx.fillStyle = orbGlow;
+                ctx.beginPath();
+                ctx.arc(orb.x, oy, 22, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#fbbf24';
+                ctx.beginPath();
+                ctx.arc(orb.x, oy, 7, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Interactive Sky Birds
+            for (let i = birds.length - 1; i >= 0; i--) {
+                const b = birds[i];
+                b.x += b.vx * dt;
+                b.y += b.vy * dt;
+                b.wing += dt * 11;
+                if (b.x > width + 50 || b.y < -50) {
+                    birds.splice(i, 1);
+                    continue;
+                }
+                const flap = Math.sin(b.wing) * 6;
+                ctx.strokeStyle = currentTheme === 'night' ? '#cbd5e1' : '#1e293b';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(b.x - 8, b.y + flap);
+                ctx.quadraticCurveTo(b.x - 3, b.y - 4, b.x, b.y);
+                ctx.quadraticCurveTo(b.x + 3, b.y - 4, b.x + 8, b.y + flap);
+                ctx.stroke();
+            }
+        }
+
+        // Main Animation Loop
+        let lastTime = performance.now();
+        function animate(now) {
+            const dt = Math.min((now - lastTime) / 1000, 0.05);
+            lastTime = now;
+
+            // Smoothly decay coal boost
+            state.boostSpeed = Math.max(0, state.boostSpeed - 65 * dt);
+            const currentSpeed = state.baseSpeed + state.boostSpeed;
+
+            // Train jump physics
+            if (state.isJumping) {
+                state.trainYOffset += state.trainVy * dt;
+                state.trainVy += 980 * dt;
+                if (state.trainYOffset >= 0) {
+                    state.trainYOffset = 0;
+                    state.trainVy = 0;
+                    state.isJumping = false;
+                }
+            }
+
+            state.wheelAngle += (currentSpeed / 14) * dt;
+            state.mountainScroll += currentSpeed * 0.12 * dt;
+            state.hillScroll += currentSpeed * 0.28 * dt;
+
+            // Update HUD speedometer & perpetually teasing station distance
+            document.getElementById('speedDisplay').textContent = Math.round(currentSpeed * 0.26);
+            state.distancePulse += dt * 1.4;
+            const teasingDistance = (12.4 + Math.sin(state.distancePulse) * 0.2).toFixed(1);
+            document.getElementById('distanceDisplay').textContent = `${teasingDistance} km`;
+
+            const theme = THEMES[currentTheme];
+            const trackY = height * 0.77;
+
+            drawSkyAndCelestial(theme, dt);
+            drawMountainRange(state.mountainScroll, 0.66, 95, theme.farMountain);
+            drawMountainRange(state.hillScroll, 0.73, 52, theme.midMountain);
+            drawDistantStation(trackY);
+            drawForegroundNatureAndTracks(theme, trackY, currentSpeed, dt);
+            drawExpressTrain(theme, trackY);
+            updateAndDrawParticles(trackY, currentSpeed, dt);
+
+            requestAnimationFrame(animate);
+        }
+        requestAnimationFrame(animate);
+
+        // =========================================================================
+        // 4. INTERACTIVE GAME CONTROLS & THEME SWITCHING
+        // =========================================================================
+        function stokeCoal() {
+            state.boostSpeed = Math.min(260, state.boostSpeed + 135);
+            const scale = width < 640 ? 0.76 : 1;
+            const trainX = Math.max(125, Math.min(width * 0.38, 390));
+            const trackY = height * 0.77 + state.trainYOffset;
+            for (let i = 0; i < 16; i++) {
+                sparkParticles.push({
+                    x: trainX + 90 * scale,
+                    y: trackY - 76 * scale,
+                    vx: -40 + (Math.random() - 0.5) * 90,
+                    vy: -90 - Math.random() * 90,
+                    alpha: 1
+                });
+            }
+        }
+
+        function hopTrain() {
+            if (!state.isJumping) {
+                state.isJumping = true;
+                state.trainVy = -410;
+            }
+        }
+
+        document.getElementById('stokeCoalBtn').addEventListener('click', stokeCoal);
+        document.getElementById('hopTrainBtn').addEventListener('click', hopTrain);
+        document.getElementById('hornBtn').addEventListener('click', () => triggerHorn(true));
+        // Environment Theme Buttons & Real-Time Auto Sync
+        let manualThemeOverride = false;
+
+        function applyTheme(themeKey) {
+            currentTheme = themeKey;
+            document.querySelectorAll('.theme-btn').forEach((b) => {
+                if (b.dataset.theme === themeKey) {
+                    b.className = 'theme-btn px-3 py-1 rounded-full text-xs sm:text-sm font-bold transition flex items-center gap-1.5 bg-amber-500/25 text-amber-200 border border-amber-400/40';
+                } else {
+                    b.className = 'theme-btn px-3 py-1 rounded-full text-xs sm:text-sm font-bold transition flex items-center gap-1.5 text-slate-300 hover:text-white';
+                }
+            });
+        }
+
+        function syncThemeWithClock() {
+            if (manualThemeOverride) return;
+            const hour = new Date().getHours();
+            // Day: 6:00 AM - 4:59 PM | Sunset/Dawn: 5:00 AM - 5:59 AM & 5:00 PM - 6:59 PM | Night: 7:00 PM - 4:59 AM
+            if (hour >= 6 && hour < 17) {
+                applyTheme('day');
+            } else if ((hour >= 5 && hour < 6) || (hour >= 17 && hour < 19)) {
+                applyTheme('sunset');
+            } else {
+                applyTheme('night');
+            }
+        }
+
+        document.querySelectorAll('.theme-btn').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                manualThemeOverride = true;
+                applyTheme(btn.dataset.theme);
+            });
+        });
+
+        // Sound Toggle
+        document.getElementById('soundToggleBtn').addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('soundIcon');
+            if (soundEnabled) {
+                ensureAudio();
+                icon.className = 'fa-solid fa-volume-high text-amber-300';
+                triggerHorn(true);
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark';
+            }
+        });
+
+        // =========================================================================
+        // 5. ON-DEMAND POPUP MODALS & BACKEND RESEND HANDLER (/api/send-email)
+        // =========================================================================
+        const EMAIL_API_ENDPOINT = '/api/send-email';
+        const notifyModal = document.getElementById('notifyModal');
+        const devModal = document.getElementById('devModal');
+
+        let toastTimer = null;
+        function showToast(msg) {
+            const banner = document.getElementById('toastBanner');
+            document.getElementById('toastText').textContent = msg;
+            banner.classList.remove('hidden');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => banner.classList.add('hidden'), 3800);
+        }
+
+        function openModal(modal, formGroupId, successId) {
+            document.getElementById(formGroupId).classList.remove('hidden');
+            document.getElementById(successId).classList.add('hidden');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeModal(modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        document.getElementById('openNotifyBtn').addEventListener('click', () => {
+            openModal(notifyModal, 'notifyFormGroup', 'notifySuccessMsg');
+        });
+        document.getElementById('closeNotifyBtn').addEventListener('click', () => closeModal(notifyModal));
+        notifyModal.addEventListener('click', (e) => {
+            if (e.target === notifyModal) closeModal(notifyModal);
+        });
+
+        document.getElementById('openDevBtn').addEventListener('click', () => {
+            openModal(devModal, 'devFormGroup', 'devSuccessMsg');
+        });
+        document.getElementById('closeDevBtn').addEventListener('click', () => closeModal(devModal));
+        devModal.addEventListener('click', (e) => {
+            if (e.target === devModal) closeModal(devModal);
+        });
+
+        async function postToEmailService(payload) {
+            try {
+                const response = await fetch(EMAIL_API_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    throw new Error(result.error || `Server responded with ${response.status}`);
+                }
+                return { ok: true, data: result };
+            } catch (err) {
+                console.warn('Email API notice:', err.message);
+                return { ok: false, error: err.message };
+            }
+        }
+
+        // Notify Me Form Submission -> Calls api/send-email.js
+        document.getElementById('notifyForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userEmail = document.getElementById('notifyEmailInput').value.trim();
+            if (!userEmail) return;
+
+            const btn = document.getElementById('notifySubmitBtn');
+            const originalHTML = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Sending Confirmation...</span>';
+
+            const res = await postToEmailService({
+                type: 'notify',
+                email: userEmail
+            });
+
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+
+            if (!res.ok && window.location.protocol !== 'blob:' && window.location.hostname !== '') {
+                showToast(`Could not reach ${EMAIL_API_ENDPOINT}: ${res.error}`);
+                return;
+            }
+
+            document.getElementById('notifyFormGroup').classList.add('hidden');
+            document.getElementById('notifySuccessMsg').classList.remove('hidden');
+            showToast(`Confirmation sent to ${userEmail}`);
+            triggerHorn(true);
+            document.getElementById('notifyEmailInput').value = '';
+        });
+
+        // Ask Developer Form Submission -> Calls api/send-email.js
+        document.getElementById('devForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userEmail = document.getElementById('devReplyEmail').value.trim();
+            const userMessage = document.getElementById('devMessageInput').value.trim();
+            if (!userEmail || !userMessage) return;
+
+            const btn = document.getElementById('devSubmitBtn');
+            const originalHTML = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Dispatching & Sending Receipt...</span>';
+
+            const res = await postToEmailService({
+                type: 'ask_developer',
+                email: userEmail,
+                message: userMessage
+            });
+
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+
+            if (!res.ok && window.location.protocol !== 'blob:' && window.location.hostname !== '') {
+                showToast(`Could not reach ${EMAIL_API_ENDPOINT}: ${res.error}`);
+                return;
+            }
+
+            document.getElementById('devFormGroup').classList.add('hidden');
+            document.getElementById('devSuccessMsg').classList.remove('hidden');
+            showToast(`Message sent & confirmation emailed to ${userEmail}`);
+            triggerHorn(true);
+            document.getElementById('devMessageInput').value = '';
+        });
+
+        // =========================================================================
+        // 6. RAINMETER-STYLE LIVE CLOCK & DATE WIDGET
+        // =========================================================================
+        function updateRainmeterClock() {
+            const now = new Date();
+            let hours = now.getHours();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12 || 12;
+
+            const mins = String(now.getMinutes()).padStart(2, '0');
+            const secs = String(now.getSeconds()).padStart(2, '0');
+            const hrsStr = String(hours).padStart(2, '0');
+
+            const dayName = now.toLocaleDateString('en-US', { weekday: 'long' });
+            const dateStr = now.toLocaleDateString('en-US', {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric'
+            });
+
+            document.getElementById('rmTime').textContent = `${hrsStr}:${mins}:${secs}`;
+            document.getElementById('rmAmPm').textContent = ampm;
+            document.getElementById('rmDay').textContent = dayName;
+            document.getElementById('rmDate').textContent = dateStr;
+
+            syncThemeWithClock();
+        }
+        updateRainmeterClock();
+        setInterval(updateRainmeterClock, 1000);
+    </script>
+</body>
+</html>
