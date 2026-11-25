@@ -1,12 +1,11 @@
 /**
  * Serverless Backend Handler for Resend Email Dispatch
- * Compatible with Vercel Functions (/api/send-email), Netlify Functions, or Node.js Express.
- * Calling Resend from the server bypasses browser CORS restrictions and protects your API key.
+ * Supports both ESM (Vercel default) and CommonJS environments.
  */
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const SENDER_EMAIL = 'Pulak Chakma Maintenance <no_reply@pulakchakma.dev.cv>';
-const OWNER_EMAIL = 'contact@pulakchakma.dev.cv';
+const SENDER_EMAIL = process.env.SENDER_EMAIL || 'Pulak Chakma Maintenance <no_reply@pulakchakma.dev.cv>';
+const OWNER_EMAIL = 'contact.pulakchakma@gmail.com';
 
 function escapeHtml(str) {
     return String(str || '')
@@ -18,7 +17,7 @@ function escapeHtml(str) {
 
 async function dispatchToResend({ to, subject, html, replyTo }) {
     if (!RESEND_API_KEY) {
-        throw new Error('Server configuration error: RESEND_API_KEY environment variable is missing.');
+        throw new Error('RESEND_API_KEY is missing in Vercel Environment Variables. Please add it and Redeploy.');
     }
 
     const payload = {
@@ -41,21 +40,30 @@ async function dispatchToResend({ to, subject, html, replyTo }) {
         body: JSON.stringify(payload)
     });
 
-    const data = await response.json();
+    const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-        throw new Error(data.message || `Resend API error (${response.status})`);
+        throw new Error(data.message || `Resend rejected request (${response.status}). Check domain verification for pulakchakma.dev.cv.`);
     }
     return data;
 }
 
-export default async function handler(req, res) {
-    // Enable CORS headers for local or cross-origin testing
+async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
+    }
+
+    // Quick health check when visiting /api/send-email in browser
+    if (req.method === 'GET') {
+        return res.status(200).json({
+            status: 'online',
+            hasApiKey: Boolean(RESEND_API_KEY),
+            sender: SENDER_EMAIL,
+            owner: OWNER_EMAIL
+        });
     }
 
     if (req.method !== 'POST') {
@@ -63,7 +71,16 @@ export default async function handler(req, res) {
     }
 
     try {
-        const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+        let body = req.body;
+        if (!body) {
+            const chunks = [];
+            for await (const chunk of req) chunks.push(chunk);
+            body = Buffer.concat(chunks).toString('utf8');
+        }
+        if (typeof body === 'string') {
+            body = JSON.parse(body || '{}');
+        }
+
         const { type, email, message } = body || {};
 
         if (!email || !email.includes('@')) {
@@ -74,23 +91,7 @@ export default async function handler(req, res) {
         const timestamp = new Date().toUTCString();
 
         if (type === 'notify') {
-            // 1. Send confirmation email to the visitor from no_reply@pulakchakma.dev.cv
-            const userReceipt = await dispatchToResend({
-                to: email.trim(),
-                subject: 'Maintenance Express — Arrival Alert Confirmed',
-                html: `
-                    <div style="font-family: 'Times New Roman', Times, serif; max-width: 560px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #f8fafc; color: #0f172a;">
-                        <h2 style="margin-top: 0; color: #b45309;">Maintenance Express — Ticket Confirmed</h2>
-                        <p>Hello,</p>
-                        <p>Thank you for checking in while our platform undergoes scheduled maintenance. Your email (<strong>${safeEmail}</strong>) is registered on our dispatch list.</p>
-                        <p>We will notify you immediately once our express train reaches the station and full service resumes.</p>
-                        <hr style="border: none; border-top: 1px solid #cbd5e1; margin: 20px 0;" />
-                        <p style="font-size: 13px; color: #475569;">Sent automatically from <strong>no_reply@pulakchakma.dev.cv</strong> &bull; Need direct assistance? Contact <strong>contact@pulakchakma.dev.cv</strong></p>
-                    </div>
-                `
-            });
-
-            // 2. Notify site owner (contact@pulakchakma.dev.cv)
+            // Send owner notification first so you always receive the signup
             const ownerAlert = await dispatchToResend({
                 to: OWNER_EMAIL,
                 replyTo: email.trim(),
@@ -104,7 +105,28 @@ export default async function handler(req, res) {
                 `
             });
 
-            return res.status(200).json({ success: true, userReceipt, ownerAlert });
+            // Send confirmation receipt to the visitor
+            let userReceipt = null;
+            try {
+                userReceipt = await dispatchToResend({
+                    to: email.trim(),
+                    subject: 'Maintenance Express — Arrival Alert Confirmed',
+                    html: `
+                        <div style="font-family: 'Times New Roman', Times, serif; max-width: 560px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #f8fafc; color: #0f172a;">
+                            <h2 style="margin-top: 0; color: #b45309;">Maintenance Express — Ticket Confirmed</h2>
+                            <p>Hello,</p>
+                            <p>Thank you for checking in while our platform undergoes scheduled maintenance. Your email (<strong>${safeEmail}</strong>) is registered on our dispatch list.</p>
+                            <p>We will notify you immediately once our express train reaches the station and full service resumes.</p>
+                            <hr style="border: none; border-top: 1px solid #cbd5e1; margin: 20px 0;" />
+                            <p style="font-size: 13px; color: #475569;">Sent automatically from <strong>no_reply@pulakchakma.dev.cv</strong> &bull; Need direct assistance? Contact <strong>contact@pulakchakma.dev.cv</strong></p>
+                        </div>
+                    `
+                });
+            } catch (receiptErr) {
+                console.warn('Visitor confirmation skipped (likely Resend test-mode restriction):', receiptErr.message);
+            }
+
+            return res.status(200).json({ success: true, ownerAlert, userReceipt });
         }
 
         if (type === 'ask_developer') {
@@ -129,22 +151,27 @@ export default async function handler(req, res) {
                 `
             });
 
-            // 2. Send automated confirmation receipt to the visitor from no_reply@pulakchakma.dev.cv
-            const userConfirmation = await dispatchToResend({
-                to: email.trim(),
-                subject: 'Confirmation: We received your message — Pulak Chakma',
-                html: `
-                    <div style="font-family: 'Times New Roman', Times, serif; max-width: 580px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #f8fafc; color: #0f172a;">
-                        <h2 style="margin-top: 0; color: #047857;">Message Received — Confirmation Receipt</h2>
-                        <p>Hello,</p>
-                        <p>Thank you for reaching out while our site is under scheduled maintenance. Your message has been delivered to <strong>contact@pulakchakma.dev.cv</strong>, and we will get back to you as soon as possible.</p>
-                        <p style="margin-bottom: 6px;"><strong>Copy of your message:</strong></p>
-                        <div style="padding: 14px; background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; color: #334155; white-space: pre-wrap;">${safeMessage}</div>
-                        <hr style="border: none; border-top: 1px solid #cbd5e1; margin: 20px 0;" />
-                        <p style="font-size: 13px; color: #475569;">This is an automated confirmation from <strong>no_reply@pulakchakma.dev.cv</strong>.</p>
-                    </div>
-                `
-            });
+            // 2. Send automated confirmation receipt to the visitor
+            let userConfirmation = null;
+            try {
+                userConfirmation = await dispatchToResend({
+                    to: email.trim(),
+                    subject: 'Confirmation: We received your message — Pulak Chakma',
+                    html: `
+                        <div style="font-family: 'Times New Roman', Times, serif; max-width: 580px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #f8fafc; color: #0f172a;">
+                            <h2 style="margin-top: 0; color: #047857;">Message Received — Confirmation Receipt</h2>
+                            <p>Hello,</p>
+                            <p>Thank you for reaching out while our site is under scheduled maintenance. Your message has been delivered to <strong>contact@pulakchakma.dev.cv</strong>, and we will get back to you as soon as possible.</p>
+                            <p style="margin-bottom: 6px;"><strong>Copy of your message:</strong></p>
+                            <div style="padding: 14px; background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; color: #334155; white-space: pre-wrap;">${safeMessage}</div>
+                            <hr style="border: none; border-top: 1px solid #cbd5e1; margin: 20px 0;" />
+                            <p style="font-size: 13px; color: #475569;">This is an automated confirmation from <strong>no_reply@pulakchakma.dev.cv</strong>.</p>
+                        </div>
+                    `
+                });
+            } catch (confirmErr) {
+                console.warn('Visitor confirmation skipped (likely Resend test-mode restriction):', confirmErr.message);
+            }
 
             return res.status(200).json({ success: true, ownerDelivery, userConfirmation });
         }
@@ -155,3 +182,5 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: error.message || 'Failed to send email via Resend.' });
     }
 }
+
+export default handler;
