@@ -1,16 +1,14 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Under Maintenance — Express Line</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Under Scheduled Maintenance — Express Line</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-    <link rel="icon" type="image/png" sizes="16x16" href="https://mqkumbvzqjolyjmwmgcf.supabase.co/storage/v1/object/public/bnsck/gallery/1795627800587_logo.png">
-    
-    
     <style>
         /* Apply Times New Roman across all text while preserving Font Awesome icon glyphs */
         html, body, h1, h2, h3, h4, p, span, a, button, input, textarea, label, div {
@@ -25,8 +23,10 @@
             padding: 0;
             width: 100%;
             height: 100%;
+            height: 100dvh;
             overflow: hidden;
             user-select: none;
+            -webkit-tap-highlight-color: transparent;
             background-color: #0b1320;
         }
 
@@ -38,6 +38,7 @@
             display: block;
             z-index: 1;
             cursor: pointer;
+            touch-action: manipulation;
         }
 
         /* Frosted Glass UI Panels */
@@ -73,7 +74,7 @@
             animation: modalPop 0.22s ease-out forwards;
         }
 
-        /* Rainmeter-style Desktop Clock & Date Widget */
+        /* Rainmeter-style Desktop & Mobile Clock Widget */
         .rainmeter-widget {
             text-shadow: 0 4px 24px rgba(0, 0, 0, 0.55);
         }
@@ -84,102 +85,102 @@
     <!-- Full-Screen Live Nature & Train Game Canvas -->
     <canvas id="worldCanvas"></canvas>
 
-    <!-- Foreground HUD Layer -->
-    <div class="relative z-10 flex flex-col justify-between w-full h-full pointer-events-none p-3 sm:p-5">
+    <!-- Foreground HUD Layer (Dynamic Viewport Height for Mobile & Desktop) -->
+    <div class="relative z-10 flex flex-col justify-between w-full h-full min-h-[100dvh] pointer-events-none px-2.5 py-2.5 sm:p-5">
 
-        <!-- TOP SECTION: Compact Controls + Rainmeter Clock & Maintenance Notice -->
-        <div class="flex flex-col items-center w-full max-w-6xl mx-auto gap-2">
-            <!-- Top Navigation Bar -->
-            <header class="flex flex-wrap items-center justify-between gap-2 w-full">
+        <!-- TOP SECTION: Responsive Controls + Rainmeter Clock & Maintenance Notice -->
+        <div class="flex flex-col items-center w-full max-w-6xl mx-auto gap-1.5 sm:gap-2.5">
+            <!-- Top Navigation Bar (Wraps cleanly on mobile, side-by-side on PC) -->
+            <header class="flex flex-wrap items-center justify-center sm:justify-between gap-1.5 sm:gap-2 w-full">
                 <!-- Environment Time-of-Day Switcher -->
-                <div class="glass-panel pointer-events-auto inline-flex items-center gap-1 p-1 rounded-full">
-                    <button type="button" data-theme="day" class="theme-btn px-3 py-1 rounded-full text-xs sm:text-sm font-bold transition flex items-center gap-1.5 text-slate-300 hover:text-white">
+                <div class="glass-panel pointer-events-auto inline-flex items-center gap-0.5 sm:gap-1 p-1 rounded-full">
+                    <button type="button" data-theme="day" class="theme-btn px-2.5 py-1 sm:px-3 rounded-full text-[11px] sm:text-sm font-bold transition flex items-center gap-1 sm:gap-1.5 text-slate-300 hover:text-white">
                         <i class="fa-solid fa-sun text-amber-300"></i>
                         <span>Day</span>
                     </button>
-                    <button type="button" data-theme="sunset" class="theme-btn px-3 py-1 rounded-full text-xs sm:text-sm font-bold transition flex items-center gap-1.5 bg-amber-500/25 text-amber-200 border border-amber-400/40">
+                    <button type="button" data-theme="sunset" class="theme-btn px-2.5 py-1 sm:px-3 rounded-full text-[11px] sm:text-sm font-bold transition flex items-center gap-1 sm:gap-1.5 bg-amber-500/25 text-amber-200 border border-amber-400/40">
                         <i class="fa-solid fa-cloud-sun text-orange-300"></i>
                         <span>Sunset</span>
                     </button>
-                    <button type="button" data-theme="night" class="theme-btn px-3 py-1 rounded-full text-xs sm:text-sm font-bold transition flex items-center gap-1.5 text-slate-300 hover:text-white">
+                    <button type="button" data-theme="night" class="theme-btn px-2.5 py-1 sm:px-3 rounded-full text-[11px] sm:text-sm font-bold transition flex items-center gap-1 sm:gap-1.5 text-slate-300 hover:text-white">
                         <i class="fa-solid fa-moon text-indigo-300"></i>
                         <span>Night</span>
                     </button>
                 </div>
 
-                <!-- Action Buttons (Open Modals Only On Click) & Sound Toggle -->
-                <div class="pointer-events-auto flex flex-wrap items-center gap-2">
-                    <button type="button" id="openNotifyBtn" class="glass-panel hover:bg-amber-500/20 hover:border-amber-400/50 text-amber-200 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-bold transition flex items-center gap-1.5 cursor-pointer">
+                <!-- Action Buttons & Sound Toggle -->
+                <div class="pointer-events-auto flex items-center justify-center gap-1.5 sm:gap-2">
+                    <button type="button" id="openNotifyBtn" class="glass-panel hover:bg-amber-500/20 hover:border-amber-400/50 text-amber-200 px-2.5 py-1.5 sm:px-3.5 rounded-full text-[11px] sm:text-sm font-bold transition flex items-center gap-1.5 cursor-pointer">
                         <i class="fa-solid fa-bell text-amber-400"></i>
                         <span>Notify Me</span>
                     </button>
 
-                    <button type="button" id="openDevBtn" class="glass-panel hover:bg-emerald-500/20 hover:border-emerald-400/50 text-emerald-200 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-bold transition flex items-center gap-1.5 cursor-pointer">
+                    <button type="button" id="openDevBtn" class="glass-panel hover:bg-emerald-500/20 hover:border-emerald-400/50 text-emerald-200 px-2.5 py-1.5 sm:px-3.5 rounded-full text-[11px] sm:text-sm font-bold transition flex items-center gap-1.5 cursor-pointer">
                         <i class="fa-solid fa-headset text-emerald-400"></i>
                         <span>Ask Developer</span>
                     </button>
 
-                    <button type="button" id="soundToggleBtn" title="Toggle Ambient Train Audio" class="glass-panel hover:bg-white/15 text-slate-200 w-9 h-9 rounded-full flex items-center justify-center transition cursor-pointer">
-                        <i id="soundIcon" class="fa-solid fa-volume-xmark text-sm"></i>
+                    <button type="button" id="soundToggleBtn" title="Toggle Ambient Train Audio" class="glass-panel hover:bg-white/15 text-slate-200 w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition cursor-pointer shrink-0">
+                        <i id="soundIcon" class="fa-solid fa-volume-xmark text-xs sm:text-sm"></i>
                     </button>
                 </div>
             </header>
 
             <!-- Compact Upper HUD: Rainmeter Clock + Sleek Maintenance Notice -->
-            <main class="flex flex-col items-center text-center px-2 gap-1.5">
+            <main class="flex flex-col items-center text-center px-1 sm:px-2 gap-1 sm:gap-1.5 w-full">
                 <!-- Rainmeter-Style Live Clock & Date Skin -->
                 <div class="rainmeter-widget select-none flex flex-col items-center">
-                    <div class="flex items-baseline gap-1.5">
-                        <span id="rmTime" class="text-2xl sm:text-4xl font-bold tracking-wider text-white/95">--:--:--</span>
-                        <span id="rmAmPm" class="text-xs sm:text-sm font-bold tracking-widest text-amber-300 uppercase">--</span>
+                    <div class="flex items-baseline gap-1 sm:gap-1.5">
+                        <span id="rmTime" class="text-xl sm:text-4xl font-bold tracking-wider text-white/95">--:--:--</span>
+                        <span id="rmAmPm" class="text-[11px] sm:text-sm font-bold tracking-widest text-amber-300 uppercase">--</span>
                     </div>
-                    <div class="flex items-center gap-2 text-[11px] sm:text-xs tracking-[0.2em] uppercase text-slate-200/90 font-bold">
+                    <div class="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs tracking-[0.15em] sm:tracking-[0.2em] uppercase text-slate-200/90 font-bold">
                         <span id="rmDay">Loading</span>
                         <span class="text-amber-400">&bull;</span>
                         <span id="rmDate">---</span>
                     </div>
                 </div>
 
-                <!-- Slim Maintenance Banner (Leaves full view of the train below) -->
-                <div class="glass-panel max-w-xl px-4 py-2.5 sm:px-6 sm:py-3 rounded-2xl border border-amber-400/30">
-                    <div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-[11px] font-bold tracking-wider uppercase mb-1">
-                        <span class="w-2 h-2 rounded-full bg-amber-400 status-dot"></span>
-                        <span> Maintenance In Progress</span>
+                <!-- Slim Maintenance Banner (Responsive width & typography so train stays clearly visible on mobile & PC) -->
+                <div class="glass-panel w-full max-w-md sm:max-w-xl px-3 py-2 sm:px-6 sm:py-3 rounded-xl sm:rounded-2xl border border-amber-400/30">
+                    <div class="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-0.5 sm:px-2.5 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-[10px] sm:text-[11px] font-bold tracking-wider uppercase mb-0.5 sm:mb-1">
+                        <span class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-amber-400 status-dot"></span>
+                        <span>Scheduled Maintenance In Progress</span>
                     </div>
-                    <h1 class="text-lg sm:text-xl font-bold text-white tracking-tight leading-snug">
-                        Site Under  Maintenance — We’ll Be Back Soon!
+                    <h1 class="text-sm sm:text-xl font-bold text-white tracking-tight leading-snug">
+                        Site Under Scheduled Maintenance — We’ll Be Back Soon!
                     </h1>
-                    <p class="text-slate-200/90 text-xs sm:text-sm mt-0.5 max-w-lg mx-auto leading-normal">
+                    <p class="text-slate-200/90 text-[11px] sm:text-sm mt-0.5 max-w-lg mx-auto leading-tight sm:leading-normal">
                         Our engineers are upgrading the tracks. Enjoy the ride—stoke coal, jump, or collect golden orbs!
                     </p>
                 </div>
             </main>
         </div>
 
-        <!-- BOTTOM GAME HUD: Interactive Conductor Controls -->
-        <footer class="w-full max-w-4xl mx-auto flex flex-col items-center gap-2.5">
+        <!-- BOTTOM GAME HUD: Interactive Conductor Controls (Mobile + Desktop Adaptive) -->
+        <footer class="w-full max-w-4xl mx-auto flex flex-col items-center gap-1.5 sm:gap-2.5">
             <!-- Game Score & Distance Bar -->
-            <div class="glass-panel pointer-events-auto px-5 py-2.5 rounded-2xl flex flex-wrap items-center justify-between gap-4 w-full">
-                <!-- Left: Interactive Game Controls -->
-                <div class="flex flex-wrap items-center gap-2">
-                    <button type="button" id="stokeCoalBtn" class="bg-amber-600 hover:bg-amber-500 active:scale-95 text-white px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 shadow-md cursor-pointer">
+            <div class="glass-panel pointer-events-auto px-3 py-2 sm:px-5 sm:py-2.5 rounded-xl sm:rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-4 w-full">
+                <!-- Interactive Game Controls (3-column grid on mobile for easy thumb taps, flex on PC) -->
+                <div class="grid grid-cols-3 sm:flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
+                    <button type="button" id="stokeCoalBtn" class="bg-amber-600 hover:bg-amber-500 active:scale-95 text-white px-2 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold transition flex items-center justify-center gap-1.5 sm:gap-2 shadow-md cursor-pointer">
                         <i class="fa-solid fa-fire"></i>
-                        <span>Stoke Coal</span>
+                        <span>Stoke</span>
                     </button>
 
-                    <button type="button" id="hopTrainBtn" class="bg-sky-600 hover:bg-sky-500 active:scale-95 text-white px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 shadow-md cursor-pointer">
+                    <button type="button" id="hopTrainBtn" class="bg-sky-600 hover:bg-sky-500 active:scale-95 text-white px-2 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold transition flex items-center justify-center gap-1.5 sm:gap-2 shadow-md cursor-pointer">
                         <i class="fa-solid fa-arrow-up"></i>
-                        <span>Hop (Space)</span>
+                        <span>Hop<span class="hidden md:inline"> (Space)</span></span>
                     </button>
 
-                    <button type="button" id="hornBtn" class="bg-slate-700 hover:bg-slate-600 active:scale-95 text-amber-200 px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 border border-white/15 cursor-pointer">
+                    <button type="button" id="hornBtn" class="bg-slate-700 hover:bg-slate-600 active:scale-95 text-amber-200 px-2 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold transition flex items-center justify-center gap-1.5 sm:gap-2 border border-white/15 cursor-pointer">
                         <i class="fa-solid fa-bullhorn"></i>
                         <span>Whistle</span>
                     </button>
                 </div>
 
-                <!-- Right: Live Game Metrics (Never Reaches Destination) -->
-                <div class="flex items-center gap-5 text-sm sm:text-base">
+                <!-- Live Game Metrics -->
+                <div class="flex items-center justify-around sm:justify-end gap-4 sm:gap-5 text-xs sm:text-base w-full sm:w-auto border-t border-white/10 pt-1.5 sm:border-0 sm:pt-0">
                     <div class="flex items-center gap-1.5 text-amber-300 font-bold">
                         <i class="fa-solid fa-star"></i>
                         <span>Orbs: <span id="orbScore">0</span></span>
@@ -188,15 +189,15 @@
                         <i class="fa-solid fa-gauge-high"></i>
                         <span><span id="speedDisplay">68</span> km/h</span>
                     </div>
-                    <div class="hidden sm:flex items-center gap-1.5 text-slate-300">
+                    <div class="flex items-center gap-1.5 text-slate-300">
                         <i class="fa-solid fa-flag-checkered text-rose-400"></i>
-                        <span>Station: <span id="distanceDisplay">12.4 km</span></span>
+                        <span><span class="hidden sm:inline">Station: </span><span id="distanceDisplay">12.4 km</span></span>
                     </div>
                 </div>
             </div>
 
             <!-- Developer Credit Link -->
-            <div class="pointer-events-auto text-xs text-slate-300/90 tracking-wide">
+            <div class="pointer-events-auto text-[11px] sm:text-xs text-slate-300/90 tracking-wide">
                 Developer:
                 <a href="https://pulakchakma.dev.cv" target="_blank" rel="noopener noreferrer" class="text-amber-300 hover:text-amber-200 underline underline-offset-4 font-bold transition">
                     Pulak Chakma
@@ -206,20 +207,20 @@
     </div>
 
     <!-- ========================================================= -->
-    <!-- POPUP MODAL 1: NOTIFY ME (HIDDEN UNTIL CLICKED)           -->
+    <!-- POPUP MODAL 1: NOTIFY ME (RESPONSIVE MOBILE & DESKTOP)    -->
     <!-- ========================================================= -->
-    <div id="notifyModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/65 backdrop-blur-sm p-4">
-        <div class="glass-modal modal-animate w-full max-w-md rounded-2xl p-6 sm:p-7 relative text-slate-100">
-            <button type="button" id="closeNotifyBtn" class="absolute top-4 right-4 text-slate-400 hover:text-white w-8 h-8 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/15 transition cursor-pointer">
+    <div id="notifyModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/65 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto">
+        <div class="glass-modal modal-animate w-full max-w-md rounded-2xl p-5 sm:p-7 relative text-slate-100 my-auto">
+            <button type="button" id="closeNotifyBtn" class="absolute top-3.5 right-3.5 sm:top-4 sm:right-4 text-slate-400 hover:text-white w-8 h-8 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/15 transition cursor-pointer">
                 <i class="fa-solid fa-xmark"></i>
             </button>
 
-            <div class="flex items-center gap-3 mb-4">
-                <div class="w-11 h-11 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300 text-lg">
+            <div class="flex items-center gap-3 mb-4 pr-6">
+                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300 text-base sm:text-lg shrink-0">
                     <i class="fa-solid fa-ticket"></i>
                 </div>
                 <div>
-                    <h2 class="text-xl font-bold text-white">Get Arrival Notification</h2>
+                    <h2 class="text-lg sm:text-xl font-bold text-white">Get Arrival Notification</h2>
                     <p class="text-xs text-slate-300">Receive an email the moment maintenance finishes.</p>
                 </div>
             </div>
@@ -233,10 +234,10 @@
                             id="notifyEmailInput"
                             required
                             placeholder="you@example.com"
-                            class="w-full px-4 py-2.5 rounded-xl bg-slate-900/90 border border-slate-600 focus:border-amber-400 focus:outline-none text-white placeholder-slate-400 text-base"
+                            class="w-full px-3.5 py-2.5 sm:px-4 rounded-xl bg-slate-900/90 border border-slate-600 focus:border-amber-400 focus:outline-none text-white placeholder-slate-400 text-base"
                         />
                     </div>
-                    <button type="submit" id="notifySubmitBtn" class="w-full py-2.5 px-5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-base transition flex items-center justify-center gap-2 shadow-lg cursor-pointer">
+                    <button type="submit" id="notifySubmitBtn" class="w-full py-2.5 px-5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-sm sm:text-base transition flex items-center justify-center gap-2 shadow-lg cursor-pointer">
                         <i class="fa-solid fa-paper-plane"></i>
                         <span>Notify Me on Launch</span>
                     </button>
@@ -248,7 +249,7 @@
                     <i class="fa-solid fa-check"></i>
                 </div>
                 <h3 class="text-lg font-bold text-white">Ticket Confirmed!</h3>
-                <p class="text-sm text-slate-300">
+                <p class="text-sm text-slate-300 break-words">
                     Your email (<span id="confirmedNotifyEmail" class="text-amber-300"></span>) is registered. We’ll alert you the moment maintenance is complete!
                 </p>
             </div>
@@ -256,26 +257,26 @@
     </div>
 
     <!-- ========================================================= -->
-    <!-- POPUP MODAL 2: ASK DEVELOPER (HIDDEN UNTIL CLICKED)       -->
+    <!-- POPUP MODAL 2: ASK DEVELOPER (RESPONSIVE MOBILE & PC)     -->
     <!-- ========================================================= -->
-    <div id="devModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/65 backdrop-blur-sm p-4">
-        <div class="glass-modal modal-animate w-full max-w-md rounded-2xl p-6 sm:p-7 relative text-slate-100">
-            <button type="button" id="closeDevBtn" class="absolute top-4 right-4 text-slate-400 hover:text-white w-8 h-8 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/15 transition cursor-pointer">
+    <div id="devModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/65 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto">
+        <div class="glass-modal modal-animate w-full max-w-md rounded-2xl p-5 sm:p-7 relative text-slate-100 my-auto">
+            <button type="button" id="closeDevBtn" class="absolute top-3.5 right-3.5 sm:top-4 sm:right-4 text-slate-400 hover:text-white w-8 h-8 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/15 transition cursor-pointer">
                 <i class="fa-solid fa-xmark"></i>
             </button>
 
-            <div class="flex items-center gap-3 mb-4">
-                <div class="w-11 h-11 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-300 text-lg">
+            <div class="flex items-center gap-3 mb-4 pr-6">
+                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-300 text-base sm:text-lg shrink-0">
                     <i class="fa-solid fa-terminal"></i>
                 </div>
                 <div>
-                    <h2 class="text-xl font-bold text-white">Ask the Developer</h2>
-                    <p class="text-xs text-slate-300">Direct message to Developer</p>
+                    <h2 class="text-lg sm:text-xl font-bold text-white">Ask the Developer</h2>
+                    <p class="text-xs text-slate-300 break-all">Direct message to contact@pulakchakma.dev.cv</p>
                 </div>
             </div>
 
             <div id="devFormGroup">
-                <form id="devForm" class="space-y-4">
+                <form id="devForm" class="space-y-3.5 sm:space-y-4">
                     <div>
                         <label for="devReplyEmail" class="block text-sm font-bold text-slate-200 mb-1">Your Email Address</label>
                         <input
@@ -283,7 +284,7 @@
                             id="devReplyEmail"
                             required
                             placeholder="you@example.com"
-                            class="w-full px-4 py-2.5 rounded-xl bg-slate-900/90 border border-slate-600 focus:border-emerald-400 focus:outline-none text-white placeholder-slate-400 text-base"
+                            class="w-full px-3.5 py-2.5 sm:px-4 rounded-xl bg-slate-900/90 border border-slate-600 focus:border-emerald-400 focus:outline-none text-white placeholder-slate-400 text-base"
                         />
                     </div>
                     <div>
@@ -293,12 +294,12 @@
                             rows="3"
                             required
                             placeholder="Ask about maintenance timeline, urgent support, or feedback..."
-                            class="w-full px-4 py-2.5 rounded-xl bg-slate-900/90 border border-slate-600 focus:border-emerald-400 focus:outline-none text-white placeholder-slate-400 text-base resize-none"
+                            class="w-full px-3.5 py-2.5 sm:px-4 rounded-xl bg-slate-900/90 border border-slate-600 focus:border-emerald-400 focus:outline-none text-white placeholder-slate-400 text-base resize-none"
                         ></textarea>
                     </div>
-                    <button type="submit" id="devSubmitBtn" class="w-full py-2.5 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-base transition flex items-center justify-center gap-2 shadow-lg cursor-pointer">
+                    <button type="submit" id="devSubmitBtn" class="w-full py-2.5 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm sm:text-base transition flex items-center justify-center gap-2 shadow-lg cursor-pointer">
                         <i class="fa-solid fa-envelope-circle-check"></i>
-                        <span>Send Message to Developer</span>
+                        <span>Send Message to Engineer</span>
                     </button>
                 </form>
             </div>
@@ -309,7 +310,7 @@
                 </div>
                 <h3 class="text-lg font-bold text-white">Message Delivered!</h3>
                 <p class="text-sm text-slate-300">
-                    Thank you! Your message has been sent to <span class="text-emerald-300">Developer</span> and a confirmation receipt was emailed to you.
+                    Thank you! Your message has been sent to <span class="text-emerald-300">contact@pulakchakma.dev.cv</span> and a confirmation receipt was emailed to you.
                 </p>
                 <a id="directMailtoLink" href="mailto:contact@pulakchakma.dev.cv" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold transition">
                     <i class="fa-solid fa-envelope"></i>
@@ -320,14 +321,14 @@
     </div>
 
     <!-- Floating Toast Notification -->
-    <div id="toastBanner" class="fixed bottom-24 left-1/2 -translate-x-1/2 z-40 hidden glass-panel px-5 py-2.5 rounded-full text-sm font-bold text-amber-200 border border-amber-400/40 shadow-xl">
+    <div id="toastBanner" class="fixed bottom-28 sm:bottom-24 left-1/2 -translate-x-1/2 z-40 hidden glass-panel px-4 py-2 sm:px-5 sm:py-2.5 rounded-full text-xs sm:text-sm font-bold text-amber-200 border border-amber-400/40 shadow-xl max-w-[90vw] text-center">
         <span id="toastText">All aboard!</span>
     </div>
 
     <script>
         function initMaintenancePage() {
             // =========================================================================
-            // 1. CANVAS & BROWSER COMPATIBILITY SETUP
+            // 1. CANVAS & RESPONSIVE SCALING SETUP (PC + MOBILE)
             // =========================================================================
             const canvas = document.getElementById('worldCanvas');
             const ctx = canvas.getContext('2d');
@@ -349,9 +350,24 @@
 
             let W = window.innerWidth || 1280;
             let H = window.innerHeight || 720;
+            let trainScale = 1;
+            let trainAnchorX = W * 0.48;
+
             function resizeCanvas() {
                 W = canvas.width = window.innerWidth || 1280;
                 H = canvas.height = window.innerHeight || 720;
+
+                // Responsive train scale & horizontal anchor so the entire locomotive + coaches fit on mobile screens
+                if (W < 480) {
+                    trainScale = Math.max(0.56, W / 560);
+                    trainAnchorX = W * 0.64;
+                } else if (W < 768) {
+                    trainScale = 0.78;
+                    trainAnchorX = W * 0.58;
+                } else {
+                    trainScale = 1;
+                    trainAnchorX = W * 0.48;
+                }
             }
             window.addEventListener('resize', resizeCanvas);
             resizeCanvas();
@@ -428,8 +444,8 @@
                 document.querySelectorAll('.theme-btn').forEach((btn) => {
                     const active = btn.dataset.theme === themeName;
                     btn.className = active
-                        ? 'theme-btn px-3 py-1 rounded-full text-xs sm:text-sm font-bold transition flex items-center gap-1.5 bg-amber-500/25 text-amber-200 border border-amber-400/40'
-                        : 'theme-btn px-3 py-1 rounded-full text-xs sm:text-sm font-bold transition flex items-center gap-1.5 text-slate-300 hover:text-white';
+                        ? 'theme-btn px-2.5 py-1 sm:px-3 rounded-full text-[11px] sm:text-sm font-bold transition flex items-center gap-1 sm:gap-1.5 bg-amber-500/25 text-amber-200 border border-amber-400/40'
+                        : 'theme-btn px-2.5 py-1 sm:px-3 rounded-full text-[11px] sm:text-sm font-bold transition flex items-center gap-1 sm:gap-1.5 text-slate-300 hover:text-white';
                 });
             }
 
@@ -512,8 +528,8 @@
                 soundEnabled = !soundEnabled;
                 const icon = document.getElementById('soundIcon');
                 icon.className = soundEnabled
-                    ? 'fa-solid fa-volume-high text-sm text-amber-300'
-                    : 'fa-solid fa-volume-xmark text-sm';
+                    ? 'fa-solid fa-volume-high text-xs sm:text-sm text-amber-300'
+                    : 'fa-solid fa-volume-xmark text-xs sm:text-sm';
                 if (soundEnabled) {
                     ensureAudio();
                     triggerHorn(true);
@@ -571,7 +587,7 @@
             function spawnOrb() {
                 goldenOrbs.push({
                     x: W + 60,
-                    yOffset: Math.random() > 0.45 ? 72 : 22,
+                    yOffset: (Math.random() > 0.45 ? 72 : 22) * trainScale,
                     bob: Math.random() * Math.PI * 2
                 });
             }
@@ -579,13 +595,14 @@
 
             function stokeCoal() {
                 targetSpeed = Math.min(9.5, targetSpeed + 1.8);
+                const trackY = W < 640 ? H * 0.71 : H * 0.76;
                 for (let i = 0; i < 10; i++) {
                     smokePuffs.push({
-                        x: W * 0.46,
-                        y: H * 0.74 - 58 - trainJumpY,
+                        x: trainAnchorX + 8 * trainScale,
+                        y: trackY - (62 + trainJumpY) * trainScale,
                         vx: -1.6 - Math.random() * 1.6,
                         vy: -1.4 - Math.random() * 1.4,
-                        r: 7 + Math.random() * 8,
+                        r: (7 + Math.random() * 8) * trainScale,
                         alpha: 0.85,
                         ember: i % 2 === 0
                     });
@@ -602,7 +619,7 @@
             document.getElementById('hopTrainBtn').addEventListener('click', hopTrain);
             document.getElementById('hornBtn').addEventListener('click', () => {
                 triggerHorn(true);
-                spawnBirdFlock(W * 0.48, H * 0.55);
+                spawnBirdFlock(trainAnchorX, H * 0.55);
             });
 
             canvas.addEventListener('click', (e) => {
@@ -617,7 +634,7 @@
             });
 
             // =========================================================================
-            // 5. CANVAS RENDERING LOOP
+            // 5. CANVAS RENDERING LOOP (RESPONSIVE SCALING FOR MOBILE & DESKTOP)
             // =========================================================================
             function drawTerrainWave(baseY, amp1, freq1, amp2, freq2, scrollFactor, fillStyle) {
                 ctx.fillStyle = fillStyle;
@@ -634,8 +651,12 @@
             }
 
             function drawTrain(trackY) {
-                const baseX = W * 0.48;
-                const y = trackY - trainJumpY;
+                ctx.save();
+                ctx.translate(trainAnchorX, trackY - trainJumpY * trainScale);
+                ctx.scale(trainScale, trainScale);
+
+                const baseX = 0;
+                const y = 0;
 
                 // Headlight cone
                 const theme = THEMES[currentTheme];
@@ -772,12 +793,15 @@
                 ctx.moveTo(lx + 18 + rodOffsetX, y - 11 + rodOffsetY);
                 ctx.lineTo(lx + 56 + rodOffsetX, y - 11 + rodOffsetY);
                 ctx.stroke();
+
+                ctx.restore();
             }
 
             function animate() {
                 frameCount++;
                 const theme = THEMES[currentTheme];
-                const trackY = H * 0.76;
+                // Keep track slightly higher on mobile so bottom HUD never covers the wheels
+                const trackY = W < 640 ? H * 0.71 : H * 0.76;
 
                 // Update physics
                 trainSpeed += (targetSpeed - trainSpeed) * 0.04;
@@ -794,7 +818,7 @@
                     }
                 }
 
-                // Update HUD metrics (station distance gently loops so the scenic journey continues)
+                // Update HUD metrics
                 if (frameCount % 12 === 0) {
                     document.getElementById('speedDisplay').textContent = Math.round(trainSpeed * 16);
                     stationKm -= trainSpeed * 0.004;
@@ -822,46 +846,50 @@
                 }
 
                 // 3. Sun / Moon
-                const sunX = W * 0.78;
+                const sunX = W * 0.82;
                 const sunY = H * theme.sunYRatio;
-                const sunHalo = ctx.createRadialGradient(sunX, sunY, 12, sunX, sunY, 110);
+                const sunRadius = W < 640 ? 22 : 32;
+                const sunHalo = ctx.createRadialGradient(sunX, sunY, 10, sunX, sunY, sunRadius * 3.4);
                 sunHalo.addColorStop(0, theme.sunGlow);
                 sunHalo.addColorStop(1, 'rgba(255,255,255,0)');
                 ctx.fillStyle = sunHalo;
                 ctx.beginPath();
-                ctx.arc(sunX, sunY, 110, 0, Math.PI * 2);
+                ctx.arc(sunX, sunY, sunRadius * 3.4, 0, Math.PI * 2);
                 ctx.fill();
 
                 ctx.fillStyle = theme.sunColor;
                 ctx.beginPath();
-                ctx.arc(sunX, sunY, 32, 0, Math.PI * 2);
+                ctx.arc(sunX, sunY, sunRadius, 0, Math.PI * 2);
                 ctx.fill();
 
                 // 4. Drifting Clouds
                 ctx.fillStyle = theme.cloudColor;
+                const cloudScaleFactor = W < 640 ? 0.72 : 1;
                 clouds.forEach((c) => {
                     c.x -= c.speed + trainSpeed * 0.06;
                     if (c.x < -180) c.x = W + 180;
+                    const s = c.scale * cloudScaleFactor;
                     ctx.beginPath();
-                    ctx.arc(c.x, c.y, 26 * c.scale, 0, Math.PI * 2);
-                    ctx.arc(c.x + 24 * c.scale, c.y - 8 * c.scale, 32 * c.scale, 0, Math.PI * 2);
-                    ctx.arc(c.x + 52 * c.scale, c.y, 24 * c.scale, 0, Math.PI * 2);
+                    ctx.arc(c.x, c.y, 26 * s, 0, Math.PI * 2);
+                    ctx.arc(c.x + 24 * s, c.y - 8 * s, 32 * s, 0, Math.PI * 2);
+                    ctx.arc(c.x + 52 * s, c.y, 24 * s, 0, Math.PI * 2);
                     ctx.fill();
                 });
 
                 // 5. Parallax Mountains & Hills
-                drawTerrainWave(trackY - 40, 95, 0.0022, 42, 0.0055, 0.14, theme.farMountain);
-                drawTerrainWave(trackY - 18, 52, 0.0036, 24, 0.008, 0.32, theme.midHill);
-                drawTerrainWave(trackY - 4, 24, 0.005, 12, 0.012, 0.58, theme.nearHill);
+                drawTerrainWave(trackY - 40 * trainScale, 95 * trainScale, 0.0022, 42 * trainScale, 0.0055, 0.14, theme.farMountain);
+                drawTerrainWave(trackY - 18 * trainScale, 52 * trainScale, 0.0036, 24 * trainScale, 0.008, 0.32, theme.midHill);
+                drawTerrainWave(trackY - 4 * trainScale, 24 * trainScale, 0.005, 12 * trainScale, 0.012, 0.58, theme.nearHill);
 
                 // 6. Pine Trees along the ridge
                 ctx.fillStyle = theme.treeFoliage;
                 trees.forEach((t) => {
                     const tx = ((t.x - worldScroll * 0.75) % (W + 300) + (W + 300)) % (W + 300) - 150;
+                    const th = t.height * trainScale;
                     ctx.beginPath();
-                    ctx.moveTo(tx, trackY - t.height);
-                    ctx.lineTo(tx - t.height * 0.36, trackY);
-                    ctx.lineTo(tx + t.height * 0.36, trackY);
+                    ctx.moveTo(tx, trackY - th);
+                    ctx.lineTo(tx - th * 0.36, trackY);
+                    ctx.lineTo(tx + th * 0.36, trackY);
                     ctx.closePath();
                     ctx.fill();
                 });
@@ -872,10 +900,10 @@
 
                 // Wooden sleepers
                 ctx.fillStyle = '#451a03';
-                const sleeperSpacing = 26;
+                const sleeperSpacing = Math.max(18, 26 * trainScale);
                 const sleeperOffset = worldScroll % sleeperSpacing;
                 for (let sx = -sleeperOffset; sx < W + sleeperSpacing; sx += sleeperSpacing) {
-                    ctx.fillRect(sx, trackY + 2, 14, 6);
+                    ctx.fillRect(sx, trackY + 2, 14 * trainScale, 6 * trainScale);
                 }
 
                 // Steel rail
@@ -885,11 +913,11 @@
                 // 8. Smoke Puffs
                 if (frameCount % 6 === 0) {
                     smokePuffs.push({
-                        x: W * 0.48 + 8,
-                        y: trackY - 62 - trainJumpY,
+                        x: trainAnchorX + 8 * trainScale,
+                        y: trackY - (62 + trainJumpY) * trainScale,
                         vx: -trainSpeed * 0.45 - 0.6,
                         vy: -0.9 - Math.random() * 0.5,
-                        r: 6 + Math.random() * 4,
+                        r: (6 + Math.random() * 4) * trainScale,
                         alpha: 0.65,
                         ember: false
                     });
@@ -898,7 +926,7 @@
                     const p = smokePuffs[i];
                     p.x += p.vx;
                     p.y += p.vy;
-                    p.r += 0.22;
+                    p.r += 0.22 * trainScale;
                     p.alpha -= 0.012;
                     if (p.alpha <= 0) {
                         smokePuffs.splice(i, 1);
@@ -922,23 +950,24 @@
                     orb.x -= trainSpeed * 1.05;
                     orb.bob += 0.08;
                     const oy = trackY - orb.yOffset + Math.sin(orb.bob) * 5;
+                    const orbR = 8 * trainScale;
 
                     // Glow
                     ctx.fillStyle = 'rgba(251, 191, 36, 0.28)';
                     ctx.beginPath();
-                    ctx.arc(orb.x, oy, 16, 0, Math.PI * 2);
+                    ctx.arc(orb.x, oy, orbR * 2, 0, Math.PI * 2);
                     ctx.fill();
 
                     // Core
                     ctx.fillStyle = '#fbbf24';
                     ctx.beginPath();
-                    ctx.arc(orb.x, oy, 8, 0, Math.PI * 2);
+                    ctx.arc(orb.x, oy, orbR, 0, Math.PI * 2);
                     ctx.fill();
 
                     // Check collection by locomotive
-                    const trainCenterX = W * 0.48;
-                    const trainCenterY = trackY - 30 - trainJumpY;
-                    if (Math.hypot(orb.x - trainCenterX, oy - trainCenterY) < 46) {
+                    const trainCenterX = trainAnchorX;
+                    const trainCenterY = trackY - (30 + trainJumpY) * trainScale;
+                    if (Math.hypot(orb.x - trainCenterX, oy - trainCenterY) < 46 * trainScale) {
                         orbCount++;
                         document.getElementById('orbScore').textContent = orbCount;
                         playOrbChime();
@@ -1069,7 +1098,7 @@
 
                 const originalBtnHtml = submitBtn.innerHTML;
                 submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Dispatching via .</span>';
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Dispatching via Resend...</span>';
 
                 const subject = encodeURIComponent(`Maintenance Page Inquiry from ${userEmail}`);
                 const body = encodeURIComponent(`From: ${userEmail}\n\nMessage:\n${userMessage}`);
@@ -1133,3 +1162,4 @@
     </script>
 </body>
 </html>
+```
