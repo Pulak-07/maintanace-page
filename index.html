@@ -246,7 +246,7 @@
                 </div>
                 <h3 class="text-lg font-bold text-white">Ticket Confirmed!</h3>
                 <p class="text-sm text-slate-300">
-                    A confirmation email has been dispatched from <span class="text-amber-300">no_reply@pulakchakma.dev.cv</span>. We’ll alert you as soon as we arrive!
+                    Your email (<span id="confirmedNotifyEmail" class="text-amber-300"></span>) is registered. We’ll alert you the moment maintenance is complete!
                 </p>
             </div>
         </div>
@@ -304,10 +304,14 @@
                 <div class="w-12 h-12 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 flex items-center justify-center mx-auto text-xl">
                     <i class="fa-solid fa-check-double"></i>
                 </div>
-                <h3 class="text-lg font-bold text-white">Message Sent & Confirmed!</h3>
+                <h3 class="text-lg font-bold text-white">Message Delivered!</h3>
                 <p class="text-sm text-slate-300">
-                    Your inquiry was delivered to <span class="text-emerald-300">contact@pulakchakma.dev.cv</span>, and a confirmation receipt has been emailed to you.
+                    Thank you! Your message has been sent to <span class="text-emerald-300">contact@pulakchakma.dev.cv</span> and a confirmation receipt was emailed to you.
                 </p>
+                <a id="directMailtoLink" href="mailto:contact@pulakchakma.dev.cv" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold transition">
+                    <i class="fa-solid fa-envelope"></i>
+                    <span>Open in Email App</span>
+                </a>
             </div>
         </div>
     </div>
@@ -319,909 +323,803 @@
 
     <script>
         function initMaintenancePage() {
-        // =========================================================================
-        // 1. CANVAS & PARALLAX NATURE WORLD ENGINE
-        // =========================================================================
-        const canvas = document.getElementById('worldCanvas');
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
+            // =========================================================================
+            // 1. CANVAS & BROWSER COMPATIBILITY SETUP
+            // =========================================================================
+            const canvas = document.getElementById('worldCanvas');
+            const ctx = canvas.getContext('2d');
 
-        // Polyfill ctx.roundRect for older Safari / mobile WebViews
-        if (!CanvasRenderingContext2D.prototype.roundRect) {
-            CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
-                const radius = Array.isArray(r) ? r[0] : (r || 0);
-                this.moveTo(x + radius, y);
-                this.arcTo(x + w, y, x + w, y + h, radius);
-                this.arcTo(x + w, y + h, x, y + h, radius);
-                this.arcTo(x, y + h, x, y, radius);
-                this.arcTo(x, y, x + w, y, radius);
-                this.closePath();
-                return this;
+            // Polyfill roundRect for older Safari / mobile browsers
+            if (!CanvasRenderingContext2D.prototype.roundRect) {
+                CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+                    const radius = typeof r === 'number' ? r : (Array.isArray(r) ? r[0] : 0);
+                    this.beginPath();
+                    this.moveTo(x + radius, y);
+                    this.arcTo(x + w, y, x + w, y + h, radius);
+                    this.arcTo(x + w, y + h, x, y + h, radius);
+                    this.arcTo(x, y + h, x, y, radius);
+                    this.arcTo(x, y, x + w, y, radius);
+                    this.closePath();
+                    return this;
+                };
+            }
+
+            let W = window.innerWidth || 1280;
+            let H = window.innerHeight || 720;
+            function resizeCanvas() {
+                W = canvas.width = window.innerWidth || 1280;
+                H = canvas.height = window.innerHeight || 720;
+            }
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            // =========================================================================
+            // 2. ENVIRONMENT THEMES (AUTO-SYNCED BY LOCAL TIME + MANUAL OVERRIDE)
+            // =========================================================================
+            const THEMES = {
+                day: {
+                    skyTop: '#2563eb',
+                    skyMid: '#60a5fa',
+                    skyHorizon: '#bae6fd',
+                    sunColor: '#fef08a',
+                    sunGlow: 'rgba(254, 240, 138, 0.45)',
+                    sunYRatio: 0.22,
+                    farMountain: '#64748b',
+                    midHill: '#15803d',
+                    nearHill: '#166534',
+                    ground: '#14532d',
+                    treeFoliage: '#065f46',
+                    cloudColor: 'rgba(255, 255, 255, 0.88)',
+                    starAlpha: 0,
+                    windowGlow: '#bae6fd',
+                    headlightAlpha: 0.08
+                },
+                sunset: {
+                    skyTop: '#1e1b4b',
+                    skyMid: '#9d174d',
+                    skyHorizon: '#f97316',
+                    sunColor: '#fde047',
+                    sunGlow: 'rgba(251, 146, 60, 0.55)',
+                    sunYRatio: 0.42,
+                    farMountain: '#312e81',
+                    midHill: '#4c1d95',
+                    nearHill: '#1e1b4b',
+                    ground: '#0f172a',
+                    treeFoliage: '#090d16',
+                    cloudColor: 'rgba(254, 215, 170, 0.55)',
+                    starAlpha: 0.35,
+                    windowGlow: '#fde68a',
+                    headlightAlpha: 0.32
+                },
+                night: {
+                    skyTop: '#020617',
+                    skyMid: '#0f172a',
+                    skyHorizon: '#1e293b',
+                    sunColor: '#f8fafc',
+                    sunGlow: 'rgba(226, 232, 240, 0.25)',
+                    sunYRatio: 0.20,
+                    farMountain: '#0f172a',
+                    midHill: '#064e3b',
+                    nearHill: '#022c22',
+                    ground: '#030712',
+                    treeFoliage: '#020617',
+                    cloudColor: 'rgba(148, 163, 184, 0.18)',
+                    starAlpha: 0.95,
+                    windowGlow: '#fef08a',
+                    headlightAlpha: 0.55
+                }
             };
-        }
 
-        let width = window.innerWidth || document.documentElement.clientWidth || 800;
-        let height = window.innerHeight || document.documentElement.clientHeight || 600;
-        let dpr = Math.min(window.devicePixelRatio || 1, 2);
+            let currentTheme = 'sunset';
+            let manualThemeOverride = false;
 
-        function resizeCanvas() {
-            width = window.innerWidth || document.documentElement.clientWidth || 800;
-            height = window.innerHeight || document.documentElement.clientHeight || 600;
-            dpr = Math.min(window.devicePixelRatio || 1, 2);
-            canvas.width = Math.floor(width * dpr);
-            canvas.height = Math.floor(height * dpr);
-            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
-
-        // Color palettes for Day, Sunset, and Night environments
-        const THEMES = {
-            day: {
-                skyTop: '#1d6fa5',
-                skyMid: '#56b4d3',
-                skyBottom: '#d9f1ff',
-                sunColor: '#fff6b3',
-                sunGlow: 'rgba(255, 240, 150, 0.45)',
-                farMountain: '#4e7c9b',
-                midMountain: '#2f6659',
-                nearHill: '#24583c',
-                meadow: '#1e4d2b',
-                river: '#3b9ec9',
-                starAlpha: 0,
-                headlightAlpha: 0.12
-            },
-            sunset: {
-                skyTop: '#1e1b4b',
-                skyMid: '#be4b49',
-                skyBottom: '#f6ad55',
-                sunColor: '#ffdd75',
-                sunGlow: 'rgba(251, 146, 60, 0.55)',
-                farMountain: '#4a2c40',
-                midMountain: '#362338',
-                nearHill: '#231f2e',
-                meadow: '#181a24',
-                river: '#d97757',
-                starAlpha: 0.35,
-                headlightAlpha: 0.45
-            },
-            night: {
-                skyTop: '#040814',
-                skyMid: '#0d1b36',
-                skyBottom: '#1c355e',
-                sunColor: '#f1f5f9',
-                sunGlow: 'rgba(203, 213, 225, 0.3)',
-                farMountain: '#0f1d33',
-                midMountain: '#0b1729',
-                nearHill: '#08121f',
-                meadow: '#060e17',
-                river: '#162d4d',
-                starAlpha: 0.95,
-                headlightAlpha: 0.85
+            function getAutoThemeFromHour(hour) {
+                if (hour >= 6 && hour < 17) return 'day';
+                if ((hour >= 5 && hour < 6) || (hour >= 17 && hour < 19)) return 'sunset';
+                return 'night';
             }
-        };
 
-        let currentTheme = 'sunset';
-
-        // Game & Train Physics State
-        const state = {
-            baseSpeed: 260,
-            boostSpeed: 0,
-            wheelAngle: 0,
-            trackScroll: 0,
-            mountainScroll: 0,
-            hillScroll: 0,
-            treeScroll: 0,
-            trainYOffset: 0,
-            trainVy: 0,
-            isJumping: false,
-            orbsCollected: 0,
-            distancePulse: 0
-        };
-
-        // Procedural Scenery Entities
-        const stars = Array.from({ length: 75 }, () => ({
-            x: Math.random(),
-            y: Math.random() * 0.55,
-            r: Math.random() * 1.6 + 0.5,
-            twinkle: Math.random() * Math.PI * 2
-        }));
-
-        const clouds = Array.from({ length: 6 }, (_, i) => ({
-            x: i * 320 + Math.random() * 120,
-            y: 55 + Math.random() * 110,
-            scale: 0.7 + Math.random() * 0.6,
-            speed: 14 + Math.random() * 12
-        }));
-
-        const trees = Array.from({ length: 24 }, (_, i) => ({
-            x: i * 110 + Math.random() * 45,
-            scale: 0.75 + Math.random() * 0.55,
-            type: i % 2
-        }));
-
-        const smokeParticles = [];
-        const sparkParticles = [];
-        const birds = [];
-        const energyOrbs = [];
-
-        function spawnOrb() {
-            const trackY = height * 0.77;
-            energyOrbs.push({
-                x: width + 60,
-                y: trackY - (Math.random() > 0.45 ? 115 : 42),
-                r: 12,
-                bob: Math.random() * Math.PI * 2
-            });
-        }
-        setInterval(spawnOrb, 2600);
-
-        function spawnBirdFlock(originX, originY) {
-            for (let i = 0; i < 5; i++) {
-                birds.push({
-                    x: originX + (Math.random() - 0.5) * 40,
-                    y: originY + (Math.random() - 0.5) * 30,
-                    vx: 70 + Math.random() * 55,
-                    vy: -18 - Math.random() * 20,
-                    wing: Math.random() * Math.PI * 2
-                });
-            }
-        }
-
-        // =========================================================================
-        // 2. WEB AUDIO SYNTHESIZER (WHISTLE & CHUG)
-        // =========================================================================
-        let audioCtx = null;
-        let soundEnabled = false;
-
-        function ensureAudio() {
-            if (!audioCtx) {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                if (AudioContext) audioCtx = new AudioContext();
-            }
-            if (audioCtx && audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-        }
-
-        function triggerHorn(forcePlay = false) {
-            const trainAnchorX = Math.max(150, Math.min(width * 0.42, 420));
-            const trackY = height * 0.77 + state.trainYOffset;
-            for (let i = 0; i < 14; i++) {
-                smokeParticles.push({
-                    x: trainAnchorX + 75,
-                    y: trackY - 78,
-                    vx: -40 - Math.random() * 50,
-                    vy: -60 - Math.random() * 60,
-                    r: 6 + Math.random() * 6,
-                    alpha: 0.9,
-                    isSteam: true
+            function applyThemeUI(themeName) {
+                if (!THEMES[themeName]) return;
+                currentTheme = themeName;
+                document.querySelectorAll('.theme-btn').forEach((btn) => {
+                    const active = btn.dataset.theme === themeName;
+                    btn.className = active
+                        ? 'theme-btn px-3 py-1 rounded-full text-xs sm:text-sm font-bold transition flex items-center gap-1.5 bg-amber-500/25 text-amber-200 border border-amber-400/40'
+                        : 'theme-btn px-3 py-1 rounded-full text-xs sm:text-sm font-bold transition flex items-center gap-1.5 text-slate-300 hover:text-white';
                 });
             }
 
-            if (!soundEnabled && !forcePlay) return;
-            ensureAudio();
-            if (!audioCtx) return;
+            function syncThemeWithClock() {
+                if (manualThemeOverride) return;
+                const autoTheme = getAutoThemeFromHour(new Date().getHours());
+                if (autoTheme !== currentTheme) {
+                    applyThemeUI(autoTheme);
+                }
+            }
 
-            const now = audioCtx.currentTime;
-            [311.13, 392.0, 466.16].forEach((freq) => {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(freq, now);
-                gain.gain.setValueAtTime(0.001, now);
-                gain.gain.exponentialRampToValueAtTime(0.06, now + 0.08);
-                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.75);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start(now);
-                osc.stop(now + 0.78);
+            document.querySelectorAll('.theme-btn').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    manualThemeOverride = true;
+                    applyThemeUI(btn.dataset.theme);
+                });
             });
-        }
+            applyThemeUI(getAutoThemeFromHour(new Date().getHours()));
 
-        function playOrbChime() {
-            if (!soundEnabled) return;
-            ensureAudio();
-            if (!audioCtx) return;
-            const now = audioCtx.currentTime;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(587.33, now);
-            osc.frequency.exponentialRampToValueAtTime(880, now + 0.16);
-            gain.gain.setValueAtTime(0.07, now);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start(now);
-            osc.stop(now + 0.26);
-        }
+            // =========================================================================
+            // 3. WEB AUDIO SYNTHESIZER (OPTIONAL WHISTLE & CHUG)
+            // =========================================================================
+            let audioCtx = null;
+            let soundEnabled = false;
 
-        // =========================================================================
-        // 3. RENDERING PIPELINE (NATURE, EVER-DISTANT STATION & TRAIN)
-        // =========================================================================
-        function drawSkyAndCelestial(theme, dt) {
-            const grad = ctx.createLinearGradient(0, 0, 0, height * 0.78);
-            grad.addColorStop(0, theme.skyTop);
-            grad.addColorStop(0.55, theme.skyMid);
-            grad.addColorStop(1, theme.skyBottom);
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, width, height);
+            function ensureAudio() {
+                if (!audioCtx) {
+                    const Ctx = window.AudioContext || window.webkitAudioContext;
+                    if (Ctx) audioCtx = new Ctx();
+                }
+                if (audioCtx && audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            }
 
-            if (theme.starAlpha > 0) {
-                stars.forEach((s) => {
-                    s.twinkle += dt * 2.5;
-                    const alpha = theme.starAlpha * (0.55 + 0.45 * Math.sin(s.twinkle));
-                    ctx.fillStyle = `rgba(255, 255, 255, ${alpha.toFixed(2)})`;
+            function triggerHorn(forcePlay = false) {
+                if (!soundEnabled && !forcePlay) return;
+                try {
+                    ensureAudio();
+                    if (!audioCtx) return;
+                    const now = audioCtx.currentTime;
+                    [293.66, 369.99, 440.0].forEach((freq) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(freq, now);
+                        osc.frequency.exponentialRampToValueAtTime(freq * 0.96, now + 0.55);
+                        gain.gain.setValueAtTime(0.001, now);
+                        gain.gain.linearRampToValueAtTime(0.055, now + 0.06);
+                        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.6);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now);
+                        osc.stop(now + 0.62);
+                    });
+                } catch (_) {}
+            }
+
+            function playOrbChime() {
+                if (!soundEnabled) return;
+                try {
+                    ensureAudio();
+                    if (!audioCtx) return;
+                    const now = audioCtx.currentTime;
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(660, now);
+                    osc.frequency.exponentialRampToValueAtTime(990, now + 0.18);
+                    gain.gain.setValueAtTime(0.06, now);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.24);
+                } catch (_) {}
+            }
+
+            document.getElementById('soundToggleBtn').addEventListener('click', () => {
+                soundEnabled = !soundEnabled;
+                const icon = document.getElementById('soundIcon');
+                icon.className = soundEnabled
+                    ? 'fa-solid fa-volume-high text-sm text-amber-300'
+                    : 'fa-solid fa-volume-xmark text-sm';
+                if (soundEnabled) {
+                    ensureAudio();
+                    triggerHorn(true);
+                }
+            });
+
+            // =========================================================================
+            // 4. WORLD ENTITIES & INTERACTIVE GAME STATE
+            // =========================================================================
+            const stars = Array.from({ length: 85 }, () => ({
+                x: Math.random(),
+                y: Math.random() * 0.55,
+                r: Math.random() * 1.6 + 0.4,
+                twinkle: Math.random() * Math.PI * 2
+            }));
+
+            const clouds = Array.from({ length: 7 }, (_, i) => ({
+                x: (i / 7) * 1400,
+                y: 60 + Math.random() * 140,
+                scale: 0.7 + Math.random() * 0.65,
+                speed: 0.18 + Math.random() * 0.18
+            }));
+
+            const trees = Array.from({ length: 28 }, (_, i) => ({
+                x: i * 110 + Math.random() * 40,
+                height: 36 + Math.random() * 34
+            }));
+
+            const birds = [];
+            const smokePuffs = [];
+            const goldenOrbs = [];
+
+            let worldScroll = 0;
+            let trainSpeed = 4.2;
+            let targetSpeed = 4.2;
+            let trainJumpY = 0;
+            let trainJumpVel = 0;
+            let wheelAngle = 0;
+            let orbCount = 0;
+            let stationKm = 12.4;
+            let frameCount = 0;
+
+            function spawnBirdFlock(bx, by) {
+                for (let i = 0; i < 4; i++) {
+                    birds.push({
+                        x: bx + (Math.random() - 0.5) * 40,
+                        y: by + (Math.random() - 0.5) * 26,
+                        vx: 1.8 + Math.random() * 1.4,
+                        vy: -0.4 - Math.random() * 0.6,
+                        wing: Math.random() * Math.PI * 2
+                    });
+                }
+            }
+
+            function spawnOrb() {
+                goldenOrbs.push({
+                    x: W + 60,
+                    yOffset: Math.random() > 0.45 ? 72 : 22,
+                    bob: Math.random() * Math.PI * 2
+                });
+            }
+            spawnOrb();
+
+            function stokeCoal() {
+                targetSpeed = Math.min(9.5, targetSpeed + 1.8);
+                for (let i = 0; i < 10; i++) {
+                    smokePuffs.push({
+                        x: W * 0.46,
+                        y: H * 0.74 - 58 - trainJumpY,
+                        vx: -1.6 - Math.random() * 1.6,
+                        vy: -1.4 - Math.random() * 1.4,
+                        r: 7 + Math.random() * 8,
+                        alpha: 0.85,
+                        ember: i % 2 === 0
+                    });
+                }
+            }
+
+            function hopTrain() {
+                if (trainJumpY <= 1) {
+                    trainJumpVel = 11.2;
+                }
+            }
+
+            document.getElementById('stokeCoalBtn').addEventListener('click', stokeCoal);
+            document.getElementById('hopTrainBtn').addEventListener('click', hopTrain);
+            document.getElementById('hornBtn').addEventListener('click', () => {
+                triggerHorn(true);
+                spawnBirdFlock(W * 0.48, H * 0.55);
+            });
+
+            canvas.addEventListener('click', (e) => {
+                spawnBirdFlock(e.clientX, e.clientY);
+            });
+
+            window.addEventListener('keydown', (e) => {
+                if (e.code === 'Space' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+                    e.preventDefault();
+                    hopTrain();
+                }
+            });
+
+            // =========================================================================
+            // 5. CANVAS RENDERING LOOP
+            // =========================================================================
+            function drawTerrainWave(baseY, amp1, freq1, amp2, freq2, scrollFactor, fillStyle) {
+                ctx.fillStyle = fillStyle;
+                ctx.beginPath();
+                ctx.moveTo(0, H);
+                for (let x = 0; x <= W + 20; x += 20) {
+                    const wx = x + worldScroll * scrollFactor;
+                    const y = baseY - Math.sin(wx * freq1) * amp1 - Math.cos(wx * freq2) * amp2;
+                    ctx.lineTo(x, y);
+                }
+                ctx.lineTo(W, H);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            function drawTrain(trackY) {
+                const baseX = W * 0.48;
+                const y = trackY - trainJumpY;
+
+                // Headlight cone
+                const theme = THEMES[currentTheme];
+                const grad = ctx.createLinearGradient(baseX + 35, y - 22, baseX + 290, y + 10);
+                grad.addColorStop(0, `rgba(254, 240, 138, ${theme.headlightAlpha})`);
+                grad.addColorStop(1, 'rgba(254, 240, 138, 0)');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.moveTo(baseX + 32, y - 26);
+                ctx.lineTo(baseX + 290, y - 68);
+                ctx.lineTo(baseX + 290, y + 16);
+                ctx.lineTo(baseX + 32, y - 16);
+                ctx.closePath();
+                ctx.fill();
+
+                // Passenger Coaches (2 cars trailing behind locomotive)
+                for (let c = 1; c <= 2; c++) {
+                    const cx = baseX - 96 - c * 108;
+                    // Coupling bar
+                    ctx.fillStyle = '#334155';
+                    ctx.fillRect(cx + 92, y - 14, 18, 5);
+
+                    // Coach body
+                    ctx.fillStyle = c === 1 ? '#1e3a8a' : '#0f766e';
                     ctx.beginPath();
-                    ctx.arc(s.x * width, s.y * height, s.r, 0, Math.PI * 2);
+                    ctx.roundRect(cx, y - 44, 94, 34, 6);
                     ctx.fill();
-                });
-            }
 
-            const sunX = width * 0.78;
-            const sunY = height * 0.34;
-            const glow = ctx.createRadialGradient(sunX, sunY, 8, sunX, sunY, 130);
-            glow.addColorStop(0, theme.sunColor);
-            glow.addColorStop(0.35, theme.sunGlow);
-            glow.addColorStop(1, 'rgba(255,255,255,0)');
-            ctx.fillStyle = glow;
-            ctx.beginPath();
-            ctx.arc(sunX, sunY, 130, 0, Math.PI * 2);
-            ctx.fill();
+                    // Gold stripe
+                    ctx.fillStyle = '#f59e0b';
+                    ctx.fillRect(cx, y - 21, 94, 4);
 
-            ctx.fillStyle = theme.sunColor;
-            ctx.beginPath();
-            ctx.arc(sunX, sunY, 32, 0, Math.PI * 2);
-            ctx.fill();
+                    // Roof
+                    ctx.fillStyle = '#cbd5e1';
+                    ctx.beginPath();
+                    ctx.roundRect(cx - 2, y - 48, 98, 6, 3);
+                    ctx.fill();
 
-            clouds.forEach((c) => {
-                c.x -= (c.speed + state.boostSpeed * 0.04) * dt;
-                if (c.x < -180) c.x = width + 180;
-                ctx.fillStyle = currentTheme === 'night' ? 'rgba(148, 163, 184, 0.12)' : 'rgba(255, 255, 255, 0.32)';
+                    // Glowing windows
+                    ctx.fillStyle = theme.windowGlow;
+                    for (let w = 0; w < 4; w++) {
+                        ctx.beginPath();
+                        ctx.roundRect(cx + 10 + w * 20, y - 38, 13, 12, 2);
+                        ctx.fill();
+                    }
+
+                    // Coach wheels
+                    [cx + 20, cx + 74].forEach((wx) => {
+                        ctx.fillStyle = '#1e293b';
+                        ctx.beginPath();
+                        ctx.arc(wx, y - 7, 7, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.strokeStyle = '#94a3b8';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                    });
+                }
+
+                // Locomotive Engine
+                const lx = baseX - 88;
+                // Boiler
+                ctx.fillStyle = '#b91c1c';
                 ctx.beginPath();
-                ctx.arc(c.x, c.y, 26 * c.scale, 0, Math.PI * 2);
-                ctx.arc(c.x + 24 * c.scale, c.y - 8 * c.scale, 32 * c.scale, 0, Math.PI * 2);
-                ctx.arc(c.x + 52 * c.scale, c.y, 24 * c.scale, 0, Math.PI * 2);
-                ctx.fill();
-            });
-        }
-
-        function drawMountainRange(scrollOffset, baseHeightRatio, amplitude, color) {
-            ctx.fillStyle = color;
-            ctx.beginPath();
-            ctx.moveTo(0, height);
-            const step = 90;
-            const startIdx = Math.floor(scrollOffset / step) - 1;
-            const count = Math.ceil(width / step) + 3;
-
-            for (let i = 0; i <= count; i++) {
-                const idx = startIdx + i;
-                const x = idx * step - scrollOffset;
-                const peak = Math.sin(idx * 0.65) * amplitude + Math.cos(idx * 1.35) * (amplitude * 0.45);
-                const y = height * baseHeightRatio - Math.abs(peak);
-                ctx.lineTo(x, y);
-            }
-            ctx.lineTo(width, height);
-            ctx.closePath();
-            ctx.fill();
-        }
-
-        function drawDistantStation(trackY) {
-            const stationX = width * 0.87;
-            const stationY = trackY - 6;
-
-            ctx.save();
-            const beaconPulse = 0.65 + 0.35 * Math.sin(performance.now() * 0.004);
-            const beaconGrad = ctx.createRadialGradient(stationX, stationY - 26, 2, stationX, stationY - 26, 42);
-            beaconGrad.addColorStop(0, `rgba(251, 191, 36, ${beaconPulse})`);
-            beaconGrad.addColorStop(1, 'rgba(251, 191, 36, 0)');
-            ctx.fillStyle = beaconGrad;
-            ctx.beginPath();
-            ctx.arc(stationX, stationY - 26, 42, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.fillStyle = currentTheme === 'day' ? '#334155' : '#0f172a';
-            ctx.fillRect(stationX - 24, stationY - 22, 48, 22);
-            ctx.fillRect(stationX - 8, stationY - 38, 16, 18);
-
-            ctx.beginPath();
-            ctx.moveTo(stationX - 28, stationY - 22);
-            ctx.lineTo(stationX, stationY - 32);
-            ctx.lineTo(stationX + 28, stationY - 22);
-            ctx.closePath();
-            ctx.fill();
-
-            ctx.fillStyle = '#fbbf24';
-            ctx.fillRect(stationX - 16, stationY - 15, 7, 7);
-            ctx.fillRect(stationX + 9, stationY - 15, 7, 7);
-            ctx.beginPath();
-            ctx.arc(stationX, stationY - 29, 3.5, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
-        }
-
-        function drawForegroundNatureAndTracks(theme, trackY, speed, dt) {
-            ctx.fillStyle = theme.meadow;
-            ctx.fillRect(0, trackY - 4, width, height - trackY + 4);
-
-            ctx.fillStyle = theme.river;
-            ctx.fillRect(0, trackY + 26, width, 18);
-
-            trees.forEach((t) => {
-                t.x -= speed * 0.55 * dt;
-                if (t.x < -60) t.x = width + 60;
-                const tx = t.x;
-                const ty = trackY - 4;
-                const s = t.scale;
-
-                ctx.fillStyle = currentTheme === 'night' ? '#051412' : '#143d29';
-                ctx.beginPath();
-                ctx.moveTo(tx, ty - 58 * s);
-                ctx.lineTo(tx - 18 * s, ty - 14 * s);
-                ctx.lineTo(tx + 18 * s, ty - 14 * s);
-                ctx.closePath();
+                ctx.roundRect(lx + 24, y - 44, 96, 34, [4, 14, 4, 4]);
                 ctx.fill();
 
+                // Gold boiler bands
+                ctx.fillStyle = '#fbbf24';
+                ctx.fillRect(lx + 46, y - 44, 4, 34);
+                ctx.fillRect(lx + 82, y - 44, 4, 34);
+
+                // Cab
+                ctx.fillStyle = '#7f1d1d';
                 ctx.beginPath();
-                ctx.moveTo(tx, ty - 42 * s);
-                ctx.lineTo(tx - 22 * s, ty);
-                ctx.lineTo(tx + 22 * s, ty);
-                ctx.closePath();
+                ctx.roundRect(lx, y - 58, 36, 48, 5);
                 ctx.fill();
-            });
+                ctx.fillStyle = '#f59e0b';
+                ctx.beginPath();
+                ctx.roundRect(lx - 3, y - 62, 42, 6, 3);
+                ctx.fill();
 
-            ctx.fillStyle = '#1e293b';
-            ctx.fillRect(0, trackY, width, 12);
+                // Cab window
+                ctx.fillStyle = theme.windowGlow;
+                ctx.beginPath();
+                ctx.roundRect(lx + 8, y - 50, 18, 16, 3);
+                ctx.fill();
 
-            state.trackScroll = (state.trackScroll + speed * dt) % 28;
-            ctx.fillStyle = '#475569';
-            for (let x = -state.trackScroll; x < width; x += 28) {
-                ctx.fillRect(x, trackY + 2, 14, 7);
-            }
-
-            ctx.fillStyle = '#cbd5e1';
-            ctx.fillRect(0, trackY - 2, width, 3.5);
-        }
-
-        function drawExpressTrain(theme, trackY) {
-            const scale = width < 640 ? 0.76 : 1;
-            const trainX = Math.max(125, Math.min(width * 0.38, 390));
-            const baseY = trackY - 3 + state.trainYOffset;
-
-            ctx.save();
-            ctx.translate(trainX, baseY);
-            ctx.scale(scale, scale);
-
-            const beamGrad = ctx.createLinearGradient(115, -36, 360, -10);
-            beamGrad.addColorStop(0, `rgba(254, 240, 138, ${theme.headlightAlpha})`);
-            beamGrad.addColorStop(1, 'rgba(254, 240, 138, 0)');
-            ctx.fillStyle = beamGrad;
-            ctx.beginPath();
-            ctx.moveTo(115, -40);
-            ctx.lineTo(360, -85);
-            ctx.lineTo(360, 10);
-            ctx.lineTo(115, -28);
-            ctx.closePath();
-            ctx.fill();
-
-            function drawCoach(offsetX, labelColor) {
-                ctx.fillStyle = '#334155';
-                ctx.fillRect(offsetX + 112, -16, 16, 5);
-
+                // Smokestack
                 ctx.fillStyle = '#1e293b';
                 ctx.beginPath();
-                ctx.roundRect(offsetX, -58, 114, 44, 6);
+                ctx.moveTo(lx + 92, y - 44);
+                ctx.lineTo(lx + 88, y - 62);
+                ctx.lineTo(lx + 104, y - 62);
+                ctx.lineTo(lx + 100, y - 44);
+                ctx.closePath();
                 ctx.fill();
 
-                ctx.fillStyle = labelColor;
-                ctx.fillRect(offsetX + 2, -28, 110, 5);
+                // Cowcatcher
+                ctx.fillStyle = '#f59e0b';
+                ctx.beginPath();
+                ctx.moveTo(lx + 120, y - 24);
+                ctx.lineTo(lx + 136, y - 8);
+                ctx.lineTo(lx + 120, y - 8);
+                ctx.closePath();
+                ctx.fill();
 
-                ctx.fillStyle = '#fde68a';
-                for (let wx = 12; wx <= 86; wx += 24) {
+                // Locomotive Wheels & Connecting Rod
+                const wheelXs = [lx + 18, lx + 56, lx + 92];
+                wheelXs.forEach((wx, idx) => {
+                    const radius = idx === 2 ? 8 : 11;
+                    ctx.fillStyle = '#0f172a';
                     ctx.beginPath();
-                    ctx.roundRect(offsetX + wx, -49, 16, 15, 3);
+                    ctx.arc(wx, y - radius, radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = '#ef4444';
+                    ctx.lineWidth = 2.5;
+                    ctx.stroke();
+
+                    // Spokes
+                    ctx.strokeStyle = '#cbd5e1';
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.moveTo(wx + Math.cos(wheelAngle) * radius, y - radius + Math.sin(wheelAngle) * radius);
+                    ctx.lineTo(wx - Math.cos(wheelAngle) * radius, y - radius - Math.sin(wheelAngle) * radius);
+                    ctx.stroke();
+                });
+
+                // Piston Rod
+                const rodOffsetX = Math.cos(wheelAngle) * 5;
+                const rodOffsetY = Math.sin(wheelAngle) * 5;
+                ctx.strokeStyle = '#e2e8f0';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(lx + 18 + rodOffsetX, y - 11 + rodOffsetY);
+                ctx.lineTo(lx + 56 + rodOffsetX, y - 11 + rodOffsetY);
+                ctx.stroke();
+            }
+
+            function animate() {
+                frameCount++;
+                const theme = THEMES[currentTheme];
+                const trackY = H * 0.76;
+
+                // Update physics
+                trainSpeed += (targetSpeed - trainSpeed) * 0.04;
+                targetSpeed += (4.2 - targetSpeed) * 0.008;
+                worldScroll += trainSpeed;
+                wheelAngle += trainSpeed * 0.065;
+
+                if (trainJumpY > 0 || trainJumpVel !== 0) {
+                    trainJumpY += trainJumpVel;
+                    trainJumpVel -= 0.58;
+                    if (trainJumpY <= 0) {
+                        trainJumpY = 0;
+                        trainJumpVel = 0;
+                    }
+                }
+
+                // Update HUD metrics (station distance gently loops so the scenic journey continues)
+                if (frameCount % 12 === 0) {
+                    document.getElementById('speedDisplay').textContent = Math.round(trainSpeed * 16);
+                    stationKm -= trainSpeed * 0.004;
+                    if (stationKm < 1.2) stationKm = 14.8;
+                    document.getElementById('distanceDisplay').textContent = `${stationKm.toFixed(1)} km`;
+                }
+
+                // 1. Sky Gradient
+                const skyGrad = ctx.createLinearGradient(0, 0, 0, trackY);
+                skyGrad.addColorStop(0, theme.skyTop);
+                skyGrad.addColorStop(0.55, theme.skyMid);
+                skyGrad.addColorStop(1, theme.skyHorizon);
+                ctx.fillStyle = skyGrad;
+                ctx.fillRect(0, 0, W, H);
+
+                // 2. Stars
+                if (theme.starAlpha > 0) {
+                    stars.forEach((s) => {
+                        const alpha = theme.starAlpha * (0.55 + 0.45 * Math.sin(frameCount * 0.04 + s.twinkle));
+                        ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                        ctx.beginPath();
+                        ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2);
+                        ctx.fill();
+                    });
+                }
+
+                // 3. Sun / Moon
+                const sunX = W * 0.78;
+                const sunY = H * theme.sunYRatio;
+                const sunHalo = ctx.createRadialGradient(sunX, sunY, 12, sunX, sunY, 110);
+                sunHalo.addColorStop(0, theme.sunGlow);
+                sunHalo.addColorStop(1, 'rgba(255,255,255,0)');
+                ctx.fillStyle = sunHalo;
+                ctx.beginPath();
+                ctx.arc(sunX, sunY, 110, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = theme.sunColor;
+                ctx.beginPath();
+                ctx.arc(sunX, sunY, 32, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 4. Drifting Clouds
+                ctx.fillStyle = theme.cloudColor;
+                clouds.forEach((c) => {
+                    c.x -= c.speed + trainSpeed * 0.06;
+                    if (c.x < -180) c.x = W + 180;
+                    ctx.beginPath();
+                    ctx.arc(c.x, c.y, 26 * c.scale, 0, Math.PI * 2);
+                    ctx.arc(c.x + 24 * c.scale, c.y - 8 * c.scale, 32 * c.scale, 0, Math.PI * 2);
+                    ctx.arc(c.x + 52 * c.scale, c.y, 24 * c.scale, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                // 5. Parallax Mountains & Hills
+                drawTerrainWave(trackY - 40, 95, 0.0022, 42, 0.0055, 0.14, theme.farMountain);
+                drawTerrainWave(trackY - 18, 52, 0.0036, 24, 0.008, 0.32, theme.midHill);
+                drawTerrainWave(trackY - 4, 24, 0.005, 12, 0.012, 0.58, theme.nearHill);
+
+                // 6. Pine Trees along the ridge
+                ctx.fillStyle = theme.treeFoliage;
+                trees.forEach((t) => {
+                    const tx = ((t.x - worldScroll * 0.75) % (W + 300) + (W + 300)) % (W + 300) - 150;
+                    ctx.beginPath();
+                    ctx.moveTo(tx, trackY - t.height);
+                    ctx.lineTo(tx - t.height * 0.36, trackY);
+                    ctx.lineTo(tx + t.height * 0.36, trackY);
+                    ctx.closePath();
+                    ctx.fill();
+                });
+
+                // 7. Ground & Railway Track
+                ctx.fillStyle = theme.ground;
+                ctx.fillRect(0, trackY, W, H - trackY);
+
+                // Wooden sleepers
+                ctx.fillStyle = '#451a03';
+                const sleeperSpacing = 26;
+                const sleeperOffset = worldScroll % sleeperSpacing;
+                for (let sx = -sleeperOffset; sx < W + sleeperSpacing; sx += sleeperSpacing) {
+                    ctx.fillRect(sx, trackY + 2, 14, 6);
+                }
+
+                // Steel rail
+                ctx.fillStyle = '#94a3b8';
+                ctx.fillRect(0, trackY - 2, W, 4);
+
+                // 8. Smoke Puffs
+                if (frameCount % 6 === 0) {
+                    smokePuffs.push({
+                        x: W * 0.48 + 8,
+                        y: trackY - 62 - trainJumpY,
+                        vx: -trainSpeed * 0.45 - 0.6,
+                        vy: -0.9 - Math.random() * 0.5,
+                        r: 6 + Math.random() * 4,
+                        alpha: 0.65,
+                        ember: false
+                    });
+                }
+                for (let i = smokePuffs.length - 1; i >= 0; i--) {
+                    const p = smokePuffs[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.r += 0.22;
+                    p.alpha -= 0.012;
+                    if (p.alpha <= 0) {
+                        smokePuffs.splice(i, 1);
+                        continue;
+                    }
+                    ctx.fillStyle = p.ember
+                        ? `rgba(251, 146, 60, ${p.alpha})`
+                        : `rgba(226, 232, 240, ${p.alpha * 0.7})`;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
                     ctx.fill();
                 }
 
-                [24, 90].forEach((wheelX) => {
-                    drawWheel(offsetX + wheelX, -8, 9);
-                });
-            }
+                // 9. Draw Express Train
+                drawTrain(trackY);
 
-            drawCoach(-258, '#10b981');
-            drawCoach(-130, '#f59e0b');
+                // 10. Collectible Golden Orbs
+                if (frameCount % 160 === 0) spawnOrb();
+                for (let i = goldenOrbs.length - 1; i >= 0; i--) {
+                    const orb = goldenOrbs[i];
+                    orb.x -= trainSpeed * 1.05;
+                    orb.bob += 0.08;
+                    const oy = trackY - orb.yOffset + Math.sin(orb.bob) * 5;
 
-            ctx.fillStyle = '#334155';
-            ctx.fillRect(-16, -16, 18, 5);
+                    // Glow
+                    ctx.fillStyle = 'rgba(251, 191, 36, 0.28)';
+                    ctx.beginPath();
+                    ctx.arc(orb.x, oy, 16, 0, Math.PI * 2);
+                    ctx.fill();
 
-            ctx.fillStyle = '#0f172a';
-            ctx.fillRect(-4, -18, 120, 8);
+                    // Core
+                    ctx.fillStyle = '#fbbf24';
+                    ctx.beginPath();
+                    ctx.arc(orb.x, oy, 8, 0, Math.PI * 2);
+                    ctx.fill();
 
-            const boilerGrad = ctx.createLinearGradient(0, -62, 0, -18);
-            boilerGrad.addColorStop(0, '#334155');
-            boilerGrad.addColorStop(0.5, '#1e293b');
-            boilerGrad.addColorStop(1, '#0f172a');
-            ctx.fillStyle = boilerGrad;
-            ctx.beginPath();
-            ctx.roundRect(28, -58, 86, 40, [4, 14, 6, 4]);
-            ctx.fill();
+                    // Check collection by locomotive
+                    const trainCenterX = W * 0.48;
+                    const trainCenterY = trackY - 30 - trainJumpY;
+                    if (Math.hypot(orb.x - trainCenterX, oy - trainCenterY) < 46) {
+                        orbCount++;
+                        document.getElementById('orbScore').textContent = orbCount;
+                        playOrbChime();
+                        goldenOrbs.splice(i, 1);
+                        continue;
+                    }
 
-            ctx.fillStyle = '#f59e0b';
-            ctx.fillRect(52, -58, 4, 40);
-            ctx.fillRect(84, -58, 4, 40);
-
-            ctx.fillStyle = '#991b1b';
-            ctx.beginPath();
-            ctx.roundRect(-6, -72, 42, 54, [6, 6, 2, 2]);
-            ctx.fill();
-
-            ctx.fillStyle = '#f59e0b';
-            ctx.fillRect(-10, -75, 50, 5);
-
-            ctx.fillStyle = '#fef08a';
-            ctx.beginPath();
-            ctx.roundRect(4, -63, 22, 18, 3);
-            ctx.fill();
-
-            ctx.fillStyle = '#0f172a';
-            ctx.beginPath();
-            ctx.moveTo(88, -58);
-            ctx.lineTo(84, -78);
-            ctx.lineTo(102, -78);
-            ctx.lineTo(98, -58);
-            ctx.closePath();
-            ctx.fill();
-
-            ctx.fillStyle = '#b91c1c';
-            ctx.beginPath();
-            ctx.moveTo(114, -18);
-            ctx.lineTo(132, -4);
-            ctx.lineTo(114, -4);
-            ctx.closePath();
-            ctx.fill();
-
-            ctx.fillStyle = '#fef9c3';
-            ctx.beginPath();
-            ctx.arc(115, -36, 5.5, 0, Math.PI * 2);
-            ctx.fill();
-
-            drawWheel(18, -11, 12);
-            drawWheel(50, -11, 12);
-            drawWheel(86, -9, 9.5);
-
-            const rodX = Math.cos(state.wheelAngle) * 5;
-            const rodY = Math.sin(state.wheelAngle) * 5;
-            ctx.strokeStyle = '#cbd5e1';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.moveTo(18 + rodX, -11 + rodY);
-            ctx.lineTo(50 + rodX, -11 + rodY);
-            ctx.stroke();
-
-            ctx.restore();
-        }
-
-        function drawWheel(cx, cy, radius) {
-            ctx.save();
-            ctx.translate(cx, cy);
-            ctx.rotate(state.wheelAngle);
-            ctx.fillStyle = '#1e293b';
-            ctx.beginPath();
-            ctx.arc(0, 0, radius, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.strokeStyle = '#f59e0b';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            ctx.strokeStyle = '#94a3b8';
-            ctx.lineWidth = 1.5;
-            for (let i = 0; i < 4; i++) {
-                const a = (i * Math.PI) / 2;
-                ctx.beginPath();
-                ctx.moveTo(Math.cos(a) * -radius, Math.sin(a) * -radius);
-                ctx.lineTo(Math.cos(a) * radius, Math.sin(a) * radius);
-                ctx.stroke();
-            }
-            ctx.restore();
-        }
-
-        function updateAndDrawParticles(trackY, speed, dt) {
-            const scale = width < 640 ? 0.76 : 1;
-            const trainX = Math.max(125, Math.min(width * 0.38, 390));
-            const stackX = trainX + 93 * scale;
-            const stackY = trackY - 78 * scale + state.trainYOffset;
-
-            if (Math.random() < (state.boostSpeed > 20 ? 0.85 : 0.45)) {
-                smokeParticles.push({
-                    x: stackX,
-                    y: stackY,
-                    vx: -speed * 0.48 - Math.random() * 35,
-                    vy: -38 - Math.random() * 28,
-                    r: 7 + Math.random() * 5,
-                    alpha: 0.65,
-                    isSteam: false
-                });
-            }
-
-            for (let i = smokeParticles.length - 1; i >= 0; i--) {
-                const p = smokeParticles[i];
-                p.x += p.vx * dt;
-                p.y += p.vy * dt;
-                p.r += 14 * dt;
-                p.alpha -= 0.42 * dt;
-                if (p.alpha <= 0) {
-                    smokeParticles.splice(i, 1);
-                    continue;
-                }
-                ctx.fillStyle = p.isSteam
-                    ? `rgba(255, 255, 255, ${p.alpha.toFixed(2)})`
-                    : `rgba(226, 232, 240, ${p.alpha.toFixed(2)})`;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
-            for (let i = sparkParticles.length - 1; i >= 0; i--) {
-                const s = sparkParticles[i];
-                s.x += s.vx * dt;
-                s.y += s.vy * dt;
-                s.vy += 180 * dt;
-                s.alpha -= 1.2 * dt;
-                if (s.alpha <= 0) {
-                    sparkParticles.splice(i, 1);
-                    continue;
-                }
-                ctx.fillStyle = `rgba(251, 191, 36, ${s.alpha.toFixed(2)})`;
-                ctx.beginPath();
-                ctx.arc(s.x, s.y, 2.5, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
-            const trainHitX = trainX + 45 * scale;
-            const trainHitY = trackY - 35 * scale + state.trainYOffset;
-
-            for (let i = energyOrbs.length - 1; i >= 0; i--) {
-                const orb = energyOrbs[i];
-                orb.x -= speed * dt;
-                orb.bob += dt * 4;
-                const oy = orb.y + Math.sin(orb.bob) * 7;
-
-                if (Math.hypot(orb.x - trainHitX, oy - trainHitY) < 52) {
-                    state.orbsCollected += 1;
-                    document.getElementById('orbScore').textContent = state.orbsCollected;
-                    playOrbChime();
-                    energyOrbs.splice(i, 1);
-                    continue;
+                    if (orb.x < -40) goldenOrbs.splice(i, 1);
                 }
 
-                if (orb.x < -40) {
-                    energyOrbs.splice(i, 1);
-                    continue;
-                }
-
-                const orbGlow = ctx.createRadialGradient(orb.x, oy, 2, orb.x, oy, 22);
-                orbGlow.addColorStop(0, '#fef08a');
-                orbGlow.addColorStop(0.5, 'rgba(245, 158, 11, 0.55)');
-                orbGlow.addColorStop(1, 'rgba(245, 158, 11, 0)');
-                ctx.fillStyle = orbGlow;
-                ctx.beginPath();
-                ctx.arc(orb.x, oy, 22, 0, Math.PI * 2);
-                ctx.fill();
-
-                ctx.fillStyle = '#fbbf24';
-                ctx.beginPath();
-                ctx.arc(orb.x, oy, 7, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
-            for (let i = birds.length - 1; i >= 0; i--) {
-                const b = birds[i];
-                b.x += b.vx * dt;
-                b.y += b.vy * dt;
-                b.wing += dt * 11;
-                if (b.x > width + 50 || b.y < -50) {
-                    birds.splice(i, 1);
-                    continue;
-                }
-                const flap = Math.sin(b.wing) * 6;
-                ctx.strokeStyle = currentTheme === 'night' ? '#cbd5e1' : '#1e293b';
+                // 11. Interactive Birds
+                ctx.strokeStyle = '#f8fafc';
                 ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(b.x - 8, b.y + flap);
-                ctx.quadraticCurveTo(b.x - 3, b.y - 4, b.x, b.y);
-                ctx.quadraticCurveTo(b.x + 3, b.y - 4, b.x + 8, b.y + flap);
-                ctx.stroke();
-            }
-        }
+                for (let i = birds.length - 1; i >= 0; i--) {
+                    const b = birds[i];
+                    b.x += b.vx;
+                    b.y += b.vy;
+                    b.wing += 0.22;
+                    const flap = Math.sin(b.wing) * 6;
+                    ctx.beginPath();
+                    ctx.moveTo(b.x - 7, b.y + flap);
+                    ctx.quadraticCurveTo(b.x - 3, b.y - 4, b.x, b.y);
+                    ctx.quadraticCurveTo(b.x + 3, b.y - 4, b.x + 7, b.y + flap);
+                    ctx.stroke();
 
-        // Main Animation Loop
-        let lastTime = performance.now();
-        function animate(now) {
-            const dt = Math.min((now - lastTime) / 1000, 0.05);
-            lastTime = now;
-
-            state.boostSpeed = Math.max(0, state.boostSpeed - 65 * dt);
-            const currentSpeed = state.baseSpeed + state.boostSpeed;
-
-            if (state.isJumping) {
-                state.trainYOffset += state.trainVy * dt;
-                state.trainVy += 980 * dt;
-                if (state.trainYOffset >= 0) {
-                    state.trainYOffset = 0;
-                    state.trainVy = 0;
-                    state.isJumping = false;
+                    if (b.x > W + 50 || b.y < -50) birds.splice(i, 1);
                 }
+
+                requestAnimationFrame(animate);
             }
 
-            state.wheelAngle += (currentSpeed / 14) * dt;
-            state.mountainScroll += currentSpeed * 0.12 * dt;
-            state.hillScroll += currentSpeed * 0.28 * dt;
+            // =========================================================================
+            // 6. ON-DEMAND POPUP MODALS (VERCEL SECRET -> GOOGLE APPS SCRIPT + RESEND)
+            // =========================================================================
+            const API_ENDPOINT = '/api/send-email';
+            const OWNER_EMAIL = 'contact@pulakchakma.dev.cv';
+            const notifyModal = document.getElementById('notifyModal');
+            const devModal = document.getElementById('devModal');
 
-            document.getElementById('speedDisplay').textContent = Math.round(currentSpeed * 0.26);
-            state.distancePulse += dt * 1.4;
-            const teasingDistance = (12.4 + Math.sin(state.distancePulse) * 0.2).toFixed(1);
-            document.getElementById('distanceDisplay').textContent = `${teasingDistance} km`;
-
-            const theme = THEMES[currentTheme];
-            const trackY = height * 0.77;
-
-            drawSkyAndCelestial(theme, dt);
-            drawMountainRange(state.mountainScroll, 0.66, 95, theme.farMountain);
-            drawMountainRange(state.hillScroll, 0.73, 52, theme.midMountain);
-            drawDistantStation(trackY);
-            drawForegroundNatureAndTracks(theme, trackY, currentSpeed, dt);
-            drawExpressTrain(theme, trackY);
-            updateAndDrawParticles(trackY, currentSpeed, dt);
-
-            requestAnimationFrame(animate);
-        }
-        requestAnimationFrame(animate);
-
-        // =========================================================================
-        // 4. INTERACTIVE GAME CONTROLS & THEME SWITCHING
-        // =========================================================================
-        function stokeCoal() {
-            state.boostSpeed = Math.min(260, state.boostSpeed + 135);
-            const scale = width < 640 ? 0.76 : 1;
-            const trainX = Math.max(125, Math.min(width * 0.38, 390));
-            const trackY = height * 0.77 + state.trainYOffset;
-            for (let i = 0; i < 16; i++) {
-                sparkParticles.push({
-                    x: trainX + 90 * scale,
-                    y: trackY - 76 * scale,
-                    vx: -40 + (Math.random() - 0.5) * 90,
-                    vy: -90 - Math.random() * 90,
-                    alpha: 1
-                });
+            let toastTimer = null;
+            function showToast(msg) {
+                const banner = document.getElementById('toastBanner');
+                document.getElementById('toastText').textContent = msg;
+                banner.classList.remove('hidden');
+                clearTimeout(toastTimer);
+                toastTimer = setTimeout(() => banner.classList.add('hidden'), 3800);
             }
-        }
 
-        function hopTrain() {
-            if (!state.isJumping) {
-                state.isJumping = true;
-                state.trainVy = -410;
+            function openModal(modal, formGroupId, successId) {
+                document.getElementById(formGroupId).classList.remove('hidden');
+                document.getElementById(successId).classList.add('hidden');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
             }
-        }
 
-        document.getElementById('stokeCoalBtn').addEventListener('click', stokeCoal);
-        document.getElementById('hopTrainBtn').addEventListener('click', hopTrain);
-        document.getElementById('hornBtn').addEventListener('click', () => triggerHorn(true));
-
-        // Click canvas to summon birds or whistle if clicking near train
-        canvas.addEventListener('click', (e) => {
-            const trackY = height * 0.77;
-            if (e.clientY < trackY - 85) {
-                spawnBirdFlock(e.clientX, e.clientY);
-            } else {
-                triggerHorn(true);
+            function closeModal(modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
             }
-        });
 
-        // Spacebar shortcut to hop train (when not typing in a modal input)
-        window.addEventListener('keydown', (e) => {
-            if (e.code === 'Space' && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+            document.getElementById('openNotifyBtn').addEventListener('click', () => {
+                openModal(notifyModal, 'notifyFormGroup', 'notifySuccessMsg');
+            });
+            document.getElementById('closeNotifyBtn').addEventListener('click', () => closeModal(notifyModal));
+            notifyModal.addEventListener('click', (e) => {
+                if (e.target === notifyModal) closeModal(notifyModal);
+            });
+
+            document.getElementById('openDevBtn').addEventListener('click', () => {
+                openModal(devModal, 'devFormGroup', 'devSuccessMsg');
+            });
+            document.getElementById('closeDevBtn').addEventListener('click', () => closeModal(devModal));
+            devModal.addEventListener('click', (e) => {
+                if (e.target === devModal) closeModal(devModal);
+            });
+
+            // Notify Me Form Submission
+            document.getElementById('notifyForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
-                hopTrain();
-            }
-        });
+                const userEmail = document.getElementById('notifyEmailInput').value.trim();
+                const submitBtn = document.getElementById('notifySubmitBtn');
+                if (!userEmail) return;
 
-        // Environment Theme Buttons & Real-Time Auto Sync
-        let manualThemeOverride = false;
+                const originalBtnHtml = submitBtn.innerHTML;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Registering Ticket...</span>';
 
-        function applyTheme(themeKey) {
-            currentTheme = themeKey;
-            document.querySelectorAll('.theme-btn').forEach((b) => {
-                if (b.dataset.theme === themeKey) {
-                    b.className = 'theme-btn px-3 py-1 rounded-full text-xs sm:text-sm font-bold transition flex items-center gap-1.5 bg-amber-500/25 text-amber-200 border border-amber-400/40';
-                } else {
-                    b.className = 'theme-btn px-3 py-1 rounded-full text-xs sm:text-sm font-bold transition flex items-center gap-1.5 text-slate-300 hover:text-white';
+                try {
+                    const res = await fetch(API_ENDPOINT, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ type: 'notify', email: userEmail })
+                    });
+                    const result = await res.json().catch(() => ({}));
+                    if (!res.ok || (result && result.success === false)) {
+                        throw new Error(result.error || 'Server rejected the request.');
+                    }
+
+                    try {
+                        const saved = JSON.parse(localStorage.getItem('maintenance_subscribers') || '[]');
+                        if (!saved.includes(userEmail)) {
+                            saved.push(userEmail);
+                            localStorage.setItem('maintenance_subscribers', JSON.stringify(saved));
+                        }
+                    } catch (_) {}
+
+                    document.getElementById('confirmedNotifyEmail').textContent = userEmail;
+                    document.getElementById('notifyFormGroup').classList.add('hidden');
+                    document.getElementById('notifySuccessMsg').classList.remove('hidden');
+                    showToast(`Confirmation email sent to ${userEmail}!`);
+                    triggerHorn(true);
+                    document.getElementById('notifyEmailInput').value = '';
+                } catch (err) {
+                    showToast(`Error: ${err.message}`);
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnHtml;
                 }
             });
-        }
 
-        function syncThemeWithClock() {
-            if (manualThemeOverride) return;
-            const hour = new Date().getHours();
-            if (hour >= 6 && hour < 17) {
-                applyTheme('day');
-            } else if ((hour >= 5 && hour < 6) || (hour >= 17 && hour < 19)) {
-                applyTheme('sunset');
-            } else {
-                applyTheme('night');
-            }
-        }
+            // Ask Developer Form Submission
+            document.getElementById('devForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const userEmail = document.getElementById('devReplyEmail').value.trim();
+                const userMessage = document.getElementById('devMessageInput').value.trim();
+                const submitBtn = document.getElementById('devSubmitBtn');
+                if (!userEmail || !userMessage) return;
 
-        document.querySelectorAll('.theme-btn').forEach((btn) => {
-            btn.addEventListener('click', () => {
-                manualThemeOverride = true;
-                applyTheme(btn.dataset.theme);
-            });
-        });
+                const originalBtnHtml = submitBtn.innerHTML;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Dispatching via Resend...</span>';
 
-        // Sound Toggle
-        document.getElementById('soundToggleBtn').addEventListener('click', () => {
-            soundEnabled = !soundEnabled;
-            const icon = document.getElementById('soundIcon');
-            if (soundEnabled) {
-                ensureAudio();
-                icon.className = 'fa-solid fa-volume-high text-amber-300';
-                triggerHorn(true);
-            } else {
-                icon.className = 'fa-solid fa-volume-xmark';
-            }
-        });
+                const subject = encodeURIComponent(`Maintenance Page Inquiry from ${userEmail}`);
+                const body = encodeURIComponent(`From: ${userEmail}\n\nMessage:\n${userMessage}`);
+                document.getElementById('directMailtoLink').href = `mailto:${OWNER_EMAIL}?subject=${subject}&body=${body}`;
 
-        // =========================================================================
-        // 5. ON-DEMAND POPUP MODALS & BACKEND RESEND HANDLER (/api/send-email)
-        // =========================================================================
-        const EMAIL_API_ENDPOINT = '/api/send-email';
-        const notifyModal = document.getElementById('notifyModal');
-        const devModal = document.getElementById('devModal');
+                try {
+                    const res = await fetch(API_ENDPOINT, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ type: 'ask_developer', email: userEmail, message: userMessage })
+                    });
+                    const result = await res.json().catch(() => ({}));
+                    if (!res.ok || (result && result.success === false)) {
+                        throw new Error(result.error || 'Server rejected the request.');
+                    }
 
-        let toastTimer = null;
-        function showToast(msg) {
-            const banner = document.getElementById('toastBanner');
-            document.getElementById('toastText').textContent = msg;
-            banner.classList.remove('hidden');
-            clearTimeout(toastTimer);
-            toastTimer = setTimeout(() => banner.classList.add('hidden'), 3800);
-        }
-
-        function openModal(modal, formGroupId, successId) {
-            document.getElementById(formGroupId).classList.remove('hidden');
-            document.getElementById(successId).classList.add('hidden');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        }
-
-        function closeModal(modal) {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }
-
-        document.getElementById('openNotifyBtn').addEventListener('click', () => {
-            openModal(notifyModal, 'notifyFormGroup', 'notifySuccessMsg');
-        });
-        document.getElementById('closeNotifyBtn').addEventListener('click', () => closeModal(notifyModal));
-        notifyModal.addEventListener('click', (e) => {
-            if (e.target === notifyModal) closeModal(notifyModal);
-        });
-
-        document.getElementById('openDevBtn').addEventListener('click', () => {
-            openModal(devModal, 'devFormGroup', 'devSuccessMsg');
-        });
-        document.getElementById('closeDevBtn').addEventListener('click', () => closeModal(devModal));
-        devModal.addEventListener('click', (e) => {
-            if (e.target === devModal) closeModal(devModal);
-        });
-
-        async function postToEmailService(payload) {
-            try {
-                const response = await fetch(EMAIL_API_ENDPOINT, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const result = await response.json().catch(() => ({}));
-                if (!response.ok) {
-                    throw new Error(result.error || `Server responded with ${response.status}`);
+                    document.getElementById('devFormGroup').classList.add('hidden');
+                    document.getElementById('devSuccessMsg').classList.remove('hidden');
+                    showToast('Message delivered & confirmation email sent!');
+                    triggerHorn(true);
+                    document.getElementById('devMessageInput').value = '';
+                } catch (err) {
+                    showToast(`Error: ${err.message}`);
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnHtml;
                 }
-                return { ok: true, data: result };
-            } catch (err) {
-                console.warn('Email API notice:', err.message);
-                return { ok: false, error: err.message };
-            }
-        }
-
-        // Notify Me Form Submission -> Calls api/send-email.js
-        document.getElementById('notifyForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const userEmail = document.getElementById('notifyEmailInput').value.trim();
-            if (!userEmail) return;
-
-            const btn = document.getElementById('notifySubmitBtn');
-            const originalHTML = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Sending Confirmation...</span>';
-
-            const res = await postToEmailService({
-                type: 'notify',
-                email: userEmail
             });
 
-            btn.disabled = false;
-            btn.innerHTML = originalHTML;
+            // =========================================================================
+            // 7. RAINMETER-STYLE LIVE CLOCK & DATE WIDGET
+            // =========================================================================
+            const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-            if (!res.ok) {
-                showToast(`Error: ${res.error}`);
-                return;
+            function updateRainmeterClock() {
+                const now = new Date();
+                let hours = now.getHours();
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                hours = hours % 12 || 12;
+
+                const pad = (n) => String(n).padStart(2, '0');
+                document.getElementById('rmTime').textContent = `${pad(hours)}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+                document.getElementById('rmAmPm').textContent = ampm;
+                document.getElementById('rmDay').textContent = DAYS[now.getDay()];
+                document.getElementById('rmDate').textContent = `${MONTHS[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
+
+                syncThemeWithClock();
             }
 
-            document.getElementById('notifyFormGroup').classList.add('hidden');
-            document.getElementById('notifySuccessMsg').classList.remove('hidden');
-            showToast(`Confirmation sent to ${userEmail}`);
-            triggerHorn(true);
-            document.getElementById('notifyEmailInput').value = '';
-        });
-
-        // Ask Developer Form Submission -> Calls api/send-email.js
-        document.getElementById('devForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const userEmail = document.getElementById('devReplyEmail').value.trim();
-            const userMessage = document.getElementById('devMessageInput').value.trim();
-            if (!userEmail || !userMessage) return;
-
-            const btn = document.getElementById('devSubmitBtn');
-            const originalHTML = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Dispatching & Sending Receipt...</span>';
-
-            const res = await postToEmailService({
-                type: 'ask_developer',
-                email: userEmail,
-                message: userMessage
-            });
-
-            btn.disabled = false;
-            btn.innerHTML = originalHTML;
-
-            if (!res.ok) {
-                showToast(`Error: ${res.error}`);
-                return;
-            }
-
-            document.getElementById('devFormGroup').classList.add('hidden');
-            document.getElementById('devSuccessMsg').classList.remove('hidden');
-            showToast(`Message sent & confirmation emailed to ${userEmail}`);
-            triggerHorn(true);
-            document.getElementById('devMessageInput').value = '';
-        });
-
-        // =========================================================================
-        // 6. RAINMETER-STYLE LIVE CLOCK & DATE WIDGET
-        // =========================================================================
-        const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
-        function updateRainmeterClock() {
-            const now = new Date();
-            let hours = now.getHours();
-            const ampm = hours >= 12 ? 'PM' : 'AM';
-            hours = hours % 12 || 12;
-
-            const pad = (n) => String(n).padStart(2, '0');
-            document.getElementById('rmTime').textContent = `${pad(hours)}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-            document.getElementById('rmAmPm').textContent = ampm;
-            document.getElementById('rmDay').textContent = DAYS[now.getDay()];
-            document.getElementById('rmDate').textContent = `${MONTHS[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
-
-            syncThemeWithClock();
-        }
-
-        updateRainmeterClock();
-        setInterval(updateRainmeterClock, 1000);
+            updateRainmeterClock();
+            setInterval(updateRainmeterClock, 1000);
+            requestAnimationFrame(animate);
         }
 
         if (document.readyState === 'loading') {
