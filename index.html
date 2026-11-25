@@ -127,13 +127,13 @@
                 <!-- Rainmeter-Style Live Clock & Date Skin -->
                 <div class="rainmeter-widget select-none flex flex-col items-center">
                     <div class="flex items-baseline gap-1.5">
-                        <span id="rmTime" class="text-2xl sm:text-4xl font-bold tracking-wider text-white/95">12:00:00</span>
-                        <span id="rmAmPm" class="text-xs sm:text-sm font-bold tracking-widest text-amber-300 uppercase">PM</span>
+                        <span id="rmTime" class="text-2xl sm:text-4xl font-bold tracking-wider text-white/95">--:--:--</span>
+                        <span id="rmAmPm" class="text-xs sm:text-sm font-bold tracking-widest text-amber-300 uppercase">--</span>
                     </div>
                     <div class="flex items-center gap-2 text-[11px] sm:text-xs tracking-[0.2em] uppercase text-slate-200/90 font-bold">
-                        <span id="rmDay">Wednesday</span>
+                        <span id="rmDay">Loading</span>
                         <span class="text-amber-400">&bull;</span>
-                        <span id="rmDate">November 25, 2026</span>
+                        <span id="rmDate">---</span>
                     </div>
                 </div>
 
@@ -461,7 +461,6 @@
         }
 
         function triggerHorn(forcePlay = false) {
-            // Visual steam burst from whistle
             const trainAnchorX = Math.max(150, Math.min(width * 0.42, 420));
             const trackY = height * 0.77 + state.trainYOffset;
             for (let i = 0; i < 14; i++) {
@@ -525,7 +524,6 @@
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, width, height);
 
-            // Stars
             if (theme.starAlpha > 0) {
                 stars.forEach((s) => {
                     s.twinkle += dt * 2.5;
@@ -537,7 +535,6 @@
                 });
             }
 
-            // Sun / Moon on Horizon
             const sunX = width * 0.78;
             const sunY = height * 0.34;
             const glow = ctx.createRadialGradient(sunX, sunY, 8, sunX, sunY, 130);
@@ -554,7 +551,6 @@
             ctx.arc(sunX, sunY, 32, 0, Math.PI * 2);
             ctx.fill();
 
-            // Drifting Clouds
             clouds.forEach((c) => {
                 c.x -= (c.speed + state.boostSpeed * 0.04) * dt;
                 if (c.x < -180) c.x = width + 180;
@@ -587,13 +583,11 @@
             ctx.fill();
         }
 
-        // The Destination Station stays perpetually on the distant horizon (never reached!)
         function drawDistantStation(trackY) {
             const stationX = width * 0.87;
             const stationY = trackY - 6;
 
             ctx.save();
-            // Warm glowing lantern beacon at the unreachable station
             const beaconPulse = 0.65 + 0.35 * Math.sin(performance.now() * 0.004);
             const beaconGrad = ctx.createRadialGradient(stationX, stationY - 26, 2, stationX, stationY - 26, 42);
             beaconGrad.addColorStop(0, `rgba(251, 191, 36, ${beaconPulse})`);
@@ -603,12 +597,10 @@
             ctx.arc(stationX, stationY - 26, 42, 0, Math.PI * 2);
             ctx.fill();
 
-            // Silhouette of Station House & Clock Tower
             ctx.fillStyle = currentTheme === 'day' ? '#334155' : '#0f172a';
             ctx.fillRect(stationX - 24, stationY - 22, 48, 22);
             ctx.fillRect(stationX - 8, stationY - 38, 16, 18);
 
-            // Pitched Roof
             ctx.beginPath();
             ctx.moveTo(stationX - 28, stationY - 22);
             ctx.lineTo(stationX, stationY - 32);
@@ -616,7 +608,6 @@
             ctx.closePath();
             ctx.fill();
 
-            // Glowing station windows
             ctx.fillStyle = '#fbbf24';
             ctx.fillRect(stationX - 16, stationY - 15, 7, 7);
             ctx.fillRect(stationX + 9, stationY - 15, 7, 7);
@@ -627,15 +618,12 @@
         }
 
         function drawForegroundNatureAndTracks(theme, trackY, speed, dt) {
-            // Meadow Ground
             ctx.fillStyle = theme.meadow;
             ctx.fillRect(0, trackY - 4, width, height - trackY + 4);
 
-            // Shimmering River Strip
             ctx.fillStyle = theme.river;
             ctx.fillRect(0, trackY + 26, width, 18);
 
-            // Parallax Pine Trees behind track
             trees.forEach((t) => {
                 t.x -= speed * 0.55 * dt;
                 if (t.x < -60) t.x = width + 60;
@@ -659,7 +647,6 @@
                 ctx.fill();
             });
 
-            // Railway Embankment & Ties
             ctx.fillStyle = '#1e293b';
             ctx.fillRect(0, trackY, width, 12);
 
@@ -669,7 +656,6 @@
                 ctx.fillRect(x, trackY + 2, 14, 7);
             }
 
-            // Polished Steel Rail
             ctx.fillStyle = '#cbd5e1';
             ctx.fillRect(0, trackY - 2, width, 3.5);
         }
@@ -683,7 +669,6 @@
             ctx.translate(trainX, baseY);
             ctx.scale(scale, scale);
 
-            // Headlight Cone Beam
             const beamGrad = ctx.createLinearGradient(115, -36, 360, -10);
             beamGrad.addColorStop(0, `rgba(254, 240, 138, ${theme.headlightAlpha})`);
             beamGrad.addColorStop(1, 'rgba(254, 240, 138, 0)');
@@ -696,23 +681,18 @@
             ctx.closePath();
             ctx.fill();
 
-            // Helper to draw a passenger coach
             function drawCoach(offsetX, labelColor) {
-                // Coupling bar
                 ctx.fillStyle = '#334155';
                 ctx.fillRect(offsetX + 112, -16, 16, 5);
 
-                // Coach body
                 ctx.fillStyle = '#1e293b';
                 ctx.beginPath();
                 ctx.roundRect(offsetX, -58, 114, 44, 6);
                 ctx.fill();
 
-                // Gold/Emerald Livery Stripe
                 ctx.fillStyle = labelColor;
                 ctx.fillRect(offsetX + 2, -28, 110, 5);
 
-                // Warm Illuminated Windows
                 ctx.fillStyle = '#fde68a';
                 for (let wx = 12; wx <= 86; wx += 24) {
                     ctx.beginPath();
@@ -720,26 +700,20 @@
                     ctx.fill();
                 }
 
-                // Coach Wheels
                 [24, 90].forEach((wheelX) => {
                     drawWheel(offsetX + wheelX, -8, 9);
                 });
             }
 
-            // Draw Two Passenger Coaches
             drawCoach(-258, '#10b981');
             drawCoach(-130, '#f59e0b');
 
-            // Coupling to Locomotive
             ctx.fillStyle = '#334155';
             ctx.fillRect(-16, -16, 18, 5);
 
-            // === LOCOMOTIVE ENGINE ===
-            // Main Chassis
             ctx.fillStyle = '#0f172a';
             ctx.fillRect(-4, -18, 120, 8);
 
-            // Boiler Barrel
             const boilerGrad = ctx.createLinearGradient(0, -62, 0, -18);
             boilerGrad.addColorStop(0, '#334155');
             boilerGrad.addColorStop(0.5, '#1e293b');
@@ -749,28 +723,23 @@
             ctx.roundRect(28, -58, 86, 40, [4, 14, 6, 4]);
             ctx.fill();
 
-            // Brass Boiler Bands
             ctx.fillStyle = '#f59e0b';
             ctx.fillRect(52, -58, 4, 40);
             ctx.fillRect(84, -58, 4, 40);
 
-            // Engineer Cab
             ctx.fillStyle = '#991b1b';
             ctx.beginPath();
             ctx.roundRect(-6, -72, 42, 54, [6, 6, 2, 2]);
             ctx.fill();
 
-            // Cab Roof
             ctx.fillStyle = '#f59e0b';
             ctx.fillRect(-10, -75, 50, 5);
 
-            // Cab Window
             ctx.fillStyle = '#fef08a';
             ctx.beginPath();
             ctx.roundRect(4, -63, 22, 18, 3);
             ctx.fill();
 
-            // Smokestack
             ctx.fillStyle = '#0f172a';
             ctx.beginPath();
             ctx.moveTo(88, -58);
@@ -780,7 +749,6 @@
             ctx.closePath();
             ctx.fill();
 
-            // Cowcatcher (Front Pilot)
             ctx.fillStyle = '#b91c1c';
             ctx.beginPath();
             ctx.moveTo(114, -18);
@@ -789,13 +757,11 @@
             ctx.closePath();
             ctx.fill();
 
-            // Locomotive Headlight
             ctx.fillStyle = '#fef9c3';
             ctx.beginPath();
             ctx.arc(115, -36, 5.5, 0, Math.PI * 2);
             ctx.fill();
 
-            // Driving Wheels & Connecting Rod
             drawWheel(18, -11, 12);
             drawWheel(50, -11, 12);
             drawWheel(86, -9, 9.5);
@@ -825,7 +791,6 @@
             ctx.lineWidth = 2;
             ctx.stroke();
 
-            // Spokes
             ctx.strokeStyle = '#94a3b8';
             ctx.lineWidth = 1.5;
             for (let i = 0; i < 4; i++) {
@@ -844,7 +809,6 @@
             const stackX = trainX + 93 * scale;
             const stackY = trackY - 78 * scale + state.trainYOffset;
 
-            // Emit continuous smoke puffs
             if (Math.random() < (state.boostSpeed > 20 ? 0.85 : 0.45)) {
                 smokeParticles.push({
                     x: stackX,
@@ -875,7 +839,6 @@
                 ctx.fill();
             }
 
-            // Firebox coal sparks
             for (let i = sparkParticles.length - 1; i >= 0; i--) {
                 const s = sparkParticles[i];
                 s.x += s.vx * dt;
@@ -892,7 +855,6 @@
                 ctx.fill();
             }
 
-            // Collectible Golden Energy Orbs
             const trainHitX = trainX + 45 * scale;
             const trainHitY = trackY - 35 * scale + state.trainYOffset;
 
@@ -902,7 +864,6 @@
                 orb.bob += dt * 4;
                 const oy = orb.y + Math.sin(orb.bob) * 7;
 
-                // Check collection collision
                 if (Math.hypot(orb.x - trainHitX, oy - trainHitY) < 52) {
                     state.orbsCollected += 1;
                     document.getElementById('orbScore').textContent = state.orbsCollected;
@@ -916,7 +877,6 @@
                     continue;
                 }
 
-                // Draw glowing orb
                 const orbGlow = ctx.createRadialGradient(orb.x, oy, 2, orb.x, oy, 22);
                 orbGlow.addColorStop(0, '#fef08a');
                 orbGlow.addColorStop(0.5, 'rgba(245, 158, 11, 0.55)');
@@ -932,7 +892,6 @@
                 ctx.fill();
             }
 
-            // Interactive Sky Birds
             for (let i = birds.length - 1; i >= 0; i--) {
                 const b = birds[i];
                 b.x += b.vx * dt;
@@ -959,11 +918,9 @@
             const dt = Math.min((now - lastTime) / 1000, 0.05);
             lastTime = now;
 
-            // Smoothly decay coal boost
             state.boostSpeed = Math.max(0, state.boostSpeed - 65 * dt);
             const currentSpeed = state.baseSpeed + state.boostSpeed;
 
-            // Train jump physics
             if (state.isJumping) {
                 state.trainYOffset += state.trainVy * dt;
                 state.trainVy += 980 * dt;
@@ -978,7 +935,6 @@
             state.mountainScroll += currentSpeed * 0.12 * dt;
             state.hillScroll += currentSpeed * 0.28 * dt;
 
-            // Update HUD speedometer & perpetually teasing station distance
             document.getElementById('speedDisplay').textContent = Math.round(currentSpeed * 0.26);
             state.distancePulse += dt * 1.4;
             const teasingDistance = (12.4 + Math.sin(state.distancePulse) * 0.2).toFixed(1);
@@ -1028,6 +984,25 @@
         document.getElementById('stokeCoalBtn').addEventListener('click', stokeCoal);
         document.getElementById('hopTrainBtn').addEventListener('click', hopTrain);
         document.getElementById('hornBtn').addEventListener('click', () => triggerHorn(true));
+
+        // Click canvas to summon birds or whistle if clicking near train
+        canvas.addEventListener('click', (e) => {
+            const trackY = height * 0.77;
+            if (e.clientY < trackY - 85) {
+                spawnBirdFlock(e.clientX, e.clientY);
+            } else {
+                triggerHorn(true);
+            }
+        });
+
+        // Spacebar shortcut to hop train (when not typing in a modal input)
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+                e.preventDefault();
+                hopTrain();
+            }
+        });
+
         // Environment Theme Buttons & Real-Time Auto Sync
         let manualThemeOverride = false;
 
@@ -1045,7 +1020,6 @@
         function syncThemeWithClock() {
             if (manualThemeOverride) return;
             const hour = new Date().getHours();
-            // Day: 6:00 AM - 4:59 PM | Sunset/Dawn: 5:00 AM - 5:59 AM & 5:00 PM - 6:59 PM | Night: 7:00 PM - 4:59 AM
             if (hour >= 6 && hour < 17) {
                 applyTheme('day');
             } else if ((hour >= 5 && hour < 6) || (hour >= 17 && hour < 19)) {
@@ -1156,8 +1130,8 @@
             btn.disabled = false;
             btn.innerHTML = originalHTML;
 
-            if (!res.ok && window.location.protocol !== 'blob:' && window.location.hostname !== '') {
-                showToast(`Could not reach ${EMAIL_API_ENDPOINT}: ${res.error}`);
+            if (!res.ok) {
+                showToast(`Error: ${res.error}`);
                 return;
             }
 
@@ -1189,8 +1163,8 @@
             btn.disabled = false;
             btn.innerHTML = originalHTML;
 
-            if (!res.ok && window.location.protocol !== 'blob:' && window.location.hostname !== '') {
-                showToast(`Could not reach ${EMAIL_API_ENDPOINT}: ${res.error}`);
+            if (!res.ok) {
+                showToast(`Error: ${res.error}`);
                 return;
             }
 
@@ -1204,30 +1178,24 @@
         // =========================================================================
         // 6. RAINMETER-STYLE LIVE CLOCK & DATE WIDGET
         // =========================================================================
+        const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
         function updateRainmeterClock() {
             const now = new Date();
             let hours = now.getHours();
             const ampm = hours >= 12 ? 'PM' : 'AM';
             hours = hours % 12 || 12;
 
-            const mins = String(now.getMinutes()).padStart(2, '0');
-            const secs = String(now.getSeconds()).padStart(2, '0');
-            const hrsStr = String(hours).padStart(2, '0');
-
-            const dayName = now.toLocaleDateString('en-US', { weekday: 'long' });
-            const dateStr = now.toLocaleDateString('en-US', {
-                month: 'long',
-                day: 'numeric',
-                year: 'numeric'
-            });
-
-            document.getElementById('rmTime').textContent = `${hrsStr}:${mins}:${secs}`;
+            const pad = (n) => String(n).padStart(2, '0');
+            document.getElementById('rmTime').textContent = `${pad(hours)}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
             document.getElementById('rmAmPm').textContent = ampm;
-            document.getElementById('rmDay').textContent = dayName;
-            document.getElementById('rmDate').textContent = dateStr;
+            document.getElementById('rmDay').textContent = DAYS[now.getDay()];
+            document.getElementById('rmDate').textContent = `${MONTHS[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
 
             syncThemeWithClock();
         }
+
         updateRainmeterClock();
         setInterval(updateRainmeterClock, 1000);
     </script>
