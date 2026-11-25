@@ -4,7 +4,7 @@
  * Calling Resend from the server bypasses browser CORS restrictions and protects your API key.
  */
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY || 're_LXGNJ83L_7fnq4Z656HWLahirbSfZLzuS';
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const SENDER_EMAIL = 'Pulak Chakma Maintenance <no_reply@pulakchakma.dev.cv>';
 const OWNER_EMAIL = 'contact@pulakchakma.dev.cv';
 
@@ -17,6 +17,10 @@ function escapeHtml(str) {
 }
 
 async function dispatchToResend({ to, subject, html, replyTo }) {
+    if (!RESEND_API_KEY) {
+        throw new Error('Server configuration error: RESEND_API_KEY environment variable is missing.');
+    }
+
     const payload = {
         from: SENDER_EMAIL,
         to: Array.isArray(to) ? to : [to],
