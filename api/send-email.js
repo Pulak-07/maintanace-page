@@ -5,7 +5,8 @@
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const SENDER_EMAIL = process.env.SENDER_EMAIL || 'Pulak Chakma Maintenance <no_reply@pulakchakma.dev.cv>';
-const OWNER_EMAIL = 'contact.pulakchakma@gmail.com';
+const FALLBACK_SENDER = 'Pulak Chakma Maintenance <onboarding@resend.dev>';
+const OWNER_EMAIL = process.env.OWNER_EMAIL || 'contact@pulakchakma.dev.cv';
 
 function escapeHtml(str) {
     return String(str || '')
@@ -31,7 +32,7 @@ async function dispatchToResend({ to, subject, html, replyTo }) {
         payload.reply_to = replyTo;
     }
 
-    const response = await fetch('https://api.resend.com/emails', {
+    let response = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${RESEND_API_KEY}`,
@@ -40,9 +41,24 @@ async function dispatchToResend({ to, subject, html, replyTo }) {
         body: JSON.stringify(payload)
     });
 
-    const data = await response.json().catch(() => ({}));
+    let data = await response.json().catch(() => ({}));
+
+    // Auto-fallback to onboarding@resend.dev if custom domain is not yet verified in Resend
+    if (!response.ok && payload.from !== FALLBACK_SENDER && (response.status === 403 || response.status === 422)) {
+        payload.from = FALLBACK_SENDER;
+        response = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${RESEND_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+        data = await response.json().catch(() => ({}));
+    }
+
     if (!response.ok) {
-        throw new Error(data.message || `Resend rejected request (${response.status}). Check domain verification for pulakchakma.dev.cv.`);
+        throw new Error(data.message || `Resend rejected request (${response.status}).`);
     }
     return data;
 }
